@@ -1,0 +1,122 @@
+a rendre
+1. Dérivation mathématique
+2. pseudo-code
+3. Courbes d'apprentissage
+métriques souhaités -> cumulative_steps, average cumulative_steps
+                       récompense moyenne (a minima), moyenne des récompense moyennes
+
+
+s00: { 100%, P, C_P, base }
+s01: { 100%, P, C_P, pas_base }
+s04: { 100%, S, C_P, base }
+s05: { 100%, S, C_P, pas_base }
+s07: { 100%, S, C_S, pas_base }
+s08: {  30%, P, C_P, base }
+s09: {  30%, P, C_P, pas_base }
+s12: {  30%, S, C_P, base }
+s13: {  30%, S, C_P, pas_base }
+s15: {  30%, S, C_S, pas_base }
+s16: {   0 &&
+          %, *,   *, base }
+s17: {   0 &&
+          %, *,   *, pas_base }
+
+
+listes actions :
+rester sur placer
+nettoyer
+charger
+gauche
+droite
+haut
+bas
+
+politiques:
+si case sale nettoyer
+si sur base et battery pas pleine charge
+
+
+reward:
+tout propre sur base +100
+déplacement -5
+nettoyer +10
+battery = 0 -500
+
+simulateur:
+etat, action --> (probas, état, reward), (probas1, état1, reward1), ...
+
+case sale, nettoyer --> (0.9, case propre, +10), (0,1, case sale, +10)
+base_pos = robot_pos && battery < 2, charger --> (0.9, battery +=1, +1), (0.1, battery=battery, +1)
+si reste sale && battery > 0 &&
+                                pos=0|1|2, haut --> (1, same, -5)
+                                pos=3|4|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|1|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|4|5, bas --> (1, same, -5)
+                                pos=2|5, droite --> (1, same, -5)
+                                pos=0|1|3|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0|3, gauche --> (1, same, -5)
+                                pos=1|2|4|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=0 && battery > 0 &&
+                                pos=1|2, haut --> (1, same, -5)
+                                pos=3|4|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=1|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|4|5, bas --> (1, same, -5)
+                                pos=2|5, droite --> (1, same, -5)
+                                pos=1|3|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=3, gauche --> (1, same, -5)
+                                pos=1|2|4|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=1 && battery > 0 &&
+                                pos=0|2, haut --> (1, same, -5)
+                                pos=3|4|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|4|5, bas --> (1, same, -5)
+                                pos=2|5, droite --> (1, same, -5)
+                                pos=0|3|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0|3, gauche --> (1, same, -5)
+                                pos=2|4|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=2 && battery > 0 &&
+                                pos=0|1, haut --> (1, same, -5)
+                                pos=3|4|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|1, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|4|5, bas --> (1, same, -5)
+                                pos=5, droite --> (1, same, -5)
+                                pos=0|1|3|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0|3, gauche --> (1, same, -5)
+                                pos=1|4|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=3 && battery > 0 &&
+                                pos=0|1|2, haut --> (1, same, -5)
+                                pos=4|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|1|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=4|5, bas --> (1, same, -5)
+                                pos=2|5, droite --> (1, same, -5)
+                                pos=0|1|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0, gauche --> (1, same, -5)
+                                pos=1|2|4|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=4 && battery > 0 &&
+                                pos=0|1|2, haut --> (1, same, -5)
+                                pos=3|5, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|1|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|5, bas --> (1, same, -5)
+                                pos=2|5, droite --> (1, same, -5)
+                                pos=0|1|3, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0|3, gauche --> (1, same, -5)
+                                pos=1|2|5, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && base_pos=5 && battery > 0 &&
+                                pos=0|1|2, haut --> (1, same, -5)
+                                pos=3|4, haut --> (0.9, en haut, -5), (0.1, same, -5)
+                                pos=0|1|2, bas --> (0.9, en bas, -5), (0.1, same, -5)
+                                pos=3|4, bas --> (1, same, -5)
+                                pos=2, droite --> (1, same, -5)
+                                pos=0|1|3|4, droite --> (0.9, a droite, -5), (0.1, same, -5)
+                                pos=0|3, gauche --> (1, same, -5)
+                                pos=1|2|4, gauche --> (0.9, a gauche, -5), (0.1, same, -5)
+
+si tout propre && robot_pos = base_pos, stay --> (1, same, 100)
+
+si battery = 0, dead --> (1, same, -500)
