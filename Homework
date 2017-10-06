@@ -6,24 +6,8 @@ métriques souhaités -> cumulative_steps, average cumulative_steps
                        récompense moyenne (a minima), moyenne des récompense moyennes
 
 
-s00: { 100%, P, C_P, base }
-s01: { 100%, P, C_P, pas_base }
-s04: { 100%, S, C_P, base }
-s05: { 100%, S, C_P, pas_base }
-s07: { 100%, S, C_S, pas_base }
-s08: {  30%, P, C_P, base }
-s09: {  30%, P, C_P, pas_base }
-s12: {  30%, S, C_P, base }
-s13: {  30%, S, C_P, pas_base }
-s15: {  30%, S, C_S, pas_base }
-s16: {   0 &&
-          %, *,   *, base }
-s17: {   0 &&
-          %, *,   *, pas_base }
-
-
 listes actions :
-rester sur placer
+rester sur place
 nettoyer
 charger
 gauche
