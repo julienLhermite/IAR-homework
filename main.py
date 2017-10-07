@@ -3,7 +3,9 @@
 from Simulator import Simulator
 from State import *
 from queue import Queue
+from threading import Thread
 import Actions
+import copy
 
 # ---------------- Constantes --------------- #
 # Système
@@ -34,22 +36,20 @@ if __name__ == "__main__":
                           goal_reward=GOAL_REWARD,
                           dead_reward=DEAD_REWARD,
                           charging_reward=CHARGING_REWARD
-                          )
+                           )
 
     # Instantiate states list
 
     state = {
-             "base_pos": (0, 0),
-             "robot_pos": (1, 0),
-             "dirty_cells": [(1, 0)],
-             "battery_level": 2
+             "base_pos": [0, 0],
+             "robot_pos": [2, 0],
+             "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
+             "battery_level": 4
             }
     print_state(GRID_SIZE, state)
-    Actions.unload(state)
-    print_state(GRID_SIZE, state)
-
     print(simulator.get_actions(state))
 
+    # roll_dice POC
     # a = [0.2, 0.2, 0.2, 0.2, 0.2]
     # d = [0, 0, 0, 0, 0]
     # tirages = 10000000
@@ -58,3 +58,20 @@ if __name__ == "__main__":
     #
     # r = [i/tirages for i in d]
     # print(r)
+
+    queue = Queue(100)
+    new_state = Actions.clean(state)
+    queue.put(new_state)
+    new_state = Actions.move_left(new_state)
+    queue.put(new_state)
+    new_state = Actions.clean(new_state)
+    queue.put(new_state)
+    new_state = Actions.move_left(new_state)
+    queue.put(new_state)
+    new_state = Actions.load(new_state)
+    queue.put(new_state)
+
+    # Display POC
+    display = Display(queue, GRID_SIZE, MAX_BATTERY_LEVEL, state)
+    display.run()
+
