@@ -95,7 +95,7 @@ class Display:
             new_state = self.do_action(action)
             diffs = self.get_diff(new_state)
 
-            print(action)
+            print("action:", action)
             if diffs:
                 self.state = new_state
                 print_state(self.grid_size, self.state)

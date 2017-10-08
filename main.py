@@ -10,11 +10,11 @@ from utilities import *
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 30
+TIME_LIMIT = 30 # en seconde
 ALPHA = 0.5
 # Proba
-MOVING_PROBA = 1
-CLEANING_PROBA = 1
+MOVING_PROBA = 0.9
+CLEANING_PROBA = 0.9
 CHARGING_PROBA = 0.9
 # Reward
 MOVING_REWARD = -5
@@ -49,9 +49,8 @@ if __name__ == "__main__":
     print("nombre d'états:", len(all_states))
 
     # Algo d'optimisation
-    policy = dynamic_programming(all_states, simulator, T)
-    # policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
-
+    # policy = dynamic_programming(all_states, simulator, T)
+    policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
 
     # Display
     state = {
