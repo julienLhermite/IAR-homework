@@ -3,7 +3,7 @@
 import itertools
 import Actions
 import time
-from random import randint
+from random import choice
 
 def get_possible_dirty_cells(grid_size, base_pos):
     """
@@ -145,11 +145,6 @@ def q_learning(all_states, simulator, T, time_limit, alpha):
     return policy
 
 
-
-
-
-"""-------------------------------------------------------------------------------------"""
-
 def epsilon_policy(q, epsilon, nb_action):
     policy = [1] * nb_action
     policy = [i * epsilon / nb_action for i in policy]
@@ -157,7 +152,6 @@ def epsilon_policy(q, epsilon, nb_action):
     return policy
 
 
-import random
 def monte_carlo(all_states, simulator, T, time_limit):
     # Initialisation de la politique et de la fonction de valeur
     q_value_function = dict()
@@ -173,7 +167,7 @@ def monte_carlo(all_states, simulator, T, time_limit):
         print("new iteration")
         # Génération d'épisode
         episode = []
-        s0 = random.choice(all_states) #je pense qu'il faut utiliser "pi" pour trouver s0, mais je ne sais pas comment faire
+        s0 = choice(all_states) #je pense qu'il faut utiliser "pi" pour trouver s0, mais je ne sais pas comment faire
         for t in range(T):
             a0 = random.choice(action_list)
             s1, r0 = simulator.get(a0, s0)
