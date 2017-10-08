@@ -94,11 +94,11 @@ class Display:
         """
         try:
             action = self.policy[str(self.state), 1]
+            print("action:", action)
 
             new_state = self.do_action(action)
             diffs = self.get_diff(new_state)
 
-            print("action:", action)
             if diffs:
                 self.state = new_state
                 print_state(self.grid_size, self.state)

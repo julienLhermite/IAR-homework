@@ -7,11 +7,11 @@ from utilities import *
 
 # ---------------- Constantes --------------- #
 # Système
-GRID_SIZE = (5, 1)
+GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 30  # en seconde
-ALPHA = 0.5
+TIME_LIMIT = 20  # en seconde
+ALPHA = 0.9
 # Proba
 MOVING_PROBA = 1
 CLEANING_PROBA = 0.9
@@ -49,16 +49,16 @@ if __name__ == "__main__":
     print("nombre d'états:", len(all_states))
 
     # Algo d'optimisation
-    policy = dynamic_programming(all_states, simulator, T)
-    # policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
+    # policy = dynamic_programming(all_states, simulator, T)
+    policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
 
     # Display
-    state = {
+    initial_state = {
         "base_pos": [0, 0],
         "robot_pos": [0, 0],
         "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
         "battery_level": MAX_BATTERY_LEVEL
     }
-    display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, state)
+    display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state)
     display.run()
 
