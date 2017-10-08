@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import tkinter
-from tkinter.ttk import Progressbar
-import itertools
+from tkinter.ttk import Progressbar, Style
 import Actions
-from threading import Thread
 
 
 def print_state(grid_size, state):
@@ -30,22 +28,38 @@ class Display:
     """
     Class affichant l'état du système à l'aide de tkinter 
     """
-    def __init__(self, p, grid_size, maximum_battery, state):
+    def __init__(self, simulator, p, grid_size, maximum_battery, state):
+        self.simulator = simulator
         self.policy = p
-        self.root = tkinter.Tk()
         self.grid_size = grid_size
         self.maximum_battery = maximum_battery
         self.state = state
-        self.s_img =  tkinter.PhotoImage(file="img/S.gif")
+        self.init_state = state
+
+        # tk object
+        self.root = tkinter.Tk()
+        self.s_img = tkinter.PhotoImage(file="img/S.gif")
         self.br_img = tkinter.PhotoImage(file="img/BR.gif")
         self.b_img = tkinter.PhotoImage(file="img/B.gif")
         self.sr_img = tkinter.PhotoImage(file="img/SR.gif")
         self.r_img = tkinter.PhotoImage(file="img/R.gif")
         self.default_img = tkinter.PhotoImage(file="img/default.gif")
         self.battery_img = tkinter.PhotoImage(file="img/battery.gif")
-        self.label = tkinter.Label(self.root, image=self.battery_img)
+        self.battery_label = tkinter.Label(self.root, image=self.battery_img)
+
+        self.robot_pos_label = tkinter.Label(self.root, text="robot_pos:")
+        self.robot_pos_entry = tkinter.Entry(self.root)
+
+        self.dirty_cell_label = tkinter.Label(self.root, text="dirty_cells:")
+        self.dirty_cell_entry = tkinter.Entry(self.root)
+
         self.progess = Progressbar(self.root, orient="horizontal", mode="determinate", maximum=self.maximum_battery,
                                    value=self.state["battery_level"])
+        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart)
+        self.grid = [[None for _ in range(self.grid_size[0])] for _ in range(self.grid_size[1])]
+
+        s = Style()
+        s.theme_use('classic')
 
     def get_diff(self, new_state):
         """
@@ -69,31 +83,50 @@ class Display:
         """
         Méthode mettant à jour régulièrement l'UI
         """
-        self.clear_grid()
         action = self.policy[str(self.state), 1]
-        self.do_action(action)
-        self.progess.configure(value=self.state["battery_level"])
+        new_state = self.do_action(action)
+        diffs = self.get_diff(new_state)
+
         print(action)
-        print_state(self.grid_size, self.state)
-        self.init()
+        if diffs:
+            self.state = new_state
+            print_state(self.grid_size, self.state)
+
+        for diff in diffs:
+            if diff == "battery_level":
+                self.progess.configure(value=self.state["battery_level"])
+            else:
+                col, row = diff
+                self.grid[row][col].configure(image=self.get_img(row, col))
 
         self.root.after(800, self.update)
 
     def do_action(self, action):
-
+        """
+        Exécute l'action à l'aide du simulateur
+        :param action: une action donnée par le politique
+        :return : le nouvelle état après l'action
+        """
         if action == "move_up":
-            self.state = Actions.move_up(self.state, self.grid_size)
+            return Actions.move_up(self.state, self.grid_size) if self.simulator.roll_dice(self.simulator.moving_proba)\
+                   else Actions.unload(self.state)
         elif action == "move_down":
-            self.state = Actions.move_down(self.state, self.grid_size)
+            return Actions.move_down(self.state, self.grid_size) if self.simulator.roll_dice(self.simulator.moving_proba)\
+                   else Actions.unload(self.state)
         elif action == "move_right":
-            self.state = Actions.move_right(self.state, self.grid_size)
+            return Actions.move_right(self.state, self.grid_size) if self.simulator.roll_dice(self.simulator.moving_proba)\
+                   else Actions.unload(self.state)
         elif action == "move_left":
-            self.state = Actions.move_left(self.state, self.grid_size)
+            return Actions.move_left(self.state, self.grid_size) if self.simulator.roll_dice(self.simulator.moving_proba)\
+                   else Actions.unload(self.state)
         elif action == "load":
-            self.state = Actions.load(self.state)
+            return Actions.load(self.state) if self.simulator.roll_dice(self.simulator.charging_proba)\
+                   else self.state
         elif action == "clean":
-            self.state = Actions.clean(self.state)
-
+            return Actions.clean(self.state) if self.simulator.roll_dice(self.simulator.cleaning_proba)\
+                   else Actions.unload(self.state)
+        elif action == "dead" or action == "stay":
+            return self.state
 
     def clear_grid(self):
         """
@@ -124,12 +157,36 @@ class Display:
         """
         Initialise l'affichage de l'UI
         """
-        self.label.grid(row=0)
-        self.progess.grid(row=0, column=1, columnspan=self.grid_size[0] - 1)
+        self.robot_pos_entry.insert(0, str(self.state["robot_pos"]))
+        self.dirty_cell_entry.insert(0, str(self.state["dirty_cells"]))
+
+        self.dirty_cell_label.grid(row=0, columnspan=2)
+        self.dirty_cell_entry.grid(row=0, column=2, columnspan=4)
+
+        self.robot_pos_label.grid(row=1, columnspan=2)
+        self.robot_pos_entry.grid(row=1, column=2, columnspan=4)
+
+        self.battery_label.grid(row=2)
+        self.progess.grid(row=2, column=1, columnspan=2)
+        self.restart_button.grid(row=2, column=3)
+
         for row in range(self.grid_size[1]):
             for col in range(self.grid_size[0]):
                     cell = tkinter.Label(self.root, image=self.get_img(row, col))
-                    cell.grid(row=row + 1, column=col)
+                    cell.grid(row=row + 3, column=col, sticky="W")
+                    self.grid[row][col] = cell
+
+    def restart(self):
+        self.init_state["robot_pos"] = [int(i) for i in self.robot_pos_entry.get() if i not in ["[", "]", " ", ","]]
+        temp_list = self.dirty_cell_entry.get().replace("[", "").replace("]", "").split(', ')
+        self.init_state["dirty_cells"] = [[int(temp_list[i]), int(temp_list[i+1])] for i in range(0, len(temp_list) - 1, 2)]
+
+        self.robot_pos_entry.delete(0, "end")
+        self.dirty_cell_entry.delete(0, "end")
+
+        self.state = self.init_state
+        self.clear_grid()
+        self.init()
 
     def run(self):
         """
@@ -137,5 +194,6 @@ class Display:
         """
         self.init()
         self.update()
+        self.root.attributes("-topmost", True)
         self.root.mainloop()
 

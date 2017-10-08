@@ -13,8 +13,8 @@ T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
 TIME_LIMIT = 30
 ALPHA = 0.5
 # Proba
-MOVING_PROBA = 0.9
-CLEANING_PROBA = 0.9
+MOVING_PROBA = 1
+CLEANING_PROBA = 1
 CHARGING_PROBA = 0.9
 # Reward
 MOVING_REWARD = -5
@@ -49,8 +49,8 @@ if __name__ == "__main__":
     print("nombre d'états:", len(all_states))
 
     # Algo d'optimisation
-    # policy = dynamic_programming(all_states, simulator, T)
-    policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
+    policy = dynamic_programming(all_states, simulator, T)
+    # policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
 
 
     # Display
@@ -60,6 +60,6 @@ if __name__ == "__main__":
         "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
         "battery_level": MAX_BATTERY_LEVEL
     }
-    display = Display(policy, GRID_SIZE, MAX_BATTERY_LEVEL, state)
+    display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, state)
     display.run()
 
