@@ -61,7 +61,10 @@ class Display:
 
         self.progess = Progressbar(self.root, orient="horizontal", mode="determinate", maximum=self.maximum_battery,
                                    value=self.state["battery_level"])
-        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart)
+
+        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart, font="Arial 10 bold",
+                                             width=5, height=3)
+
         self.grid = [[None for _ in range(self.grid_size[0])] for _ in range(self.grid_size[1])]
 
         s = Style()
@@ -110,7 +113,7 @@ class Display:
             print("La configuration est invalide")
             print("KeyError", e)
 
-        self.root.after(800, self.update)
+        self.root.after(1000, self.update)
 
     def do_action(self, action):
         """
@@ -174,26 +177,28 @@ class Display:
         self.dirty_cell_entry.insert(0, str(self.state["dirty_cells"]))
 
         self.base_pos_label.grid(row=0, columnspan=2)
-        self.base_pos_entry.grid(row=0, column=2, columnspan=4)
+        self.base_pos_entry.grid(row=0, column=2, columnspan=self.grid_size[0] * 5)
 
         self.robot_pos_label.grid(row=1, columnspan=2)
-        self.robot_pos_entry.grid(row=1, column=2, columnspan=4)
+        self.robot_pos_entry.grid(row=1, column=2, columnspan=self.grid_size[0] * 5)
 
         self.battery_level_label.grid(row=2, columnspan=2)
-        self.battery_level_entry.grid(row=2, column=2, columnspan=4)
+        self.battery_level_entry.grid(row=2, column=2, columnspan=self.grid_size[0] * 5)
 
         self.dirty_cell_label.grid(row=3, columnspan=2)
-        self.dirty_cell_entry.grid(row=3, column=2, columnspan=4)
+        self.dirty_cell_entry.grid(row=3, column=2, columnspan=self.grid_size[0] * 5)
 
         self.battery_label.grid(row=4)
         self.progess.grid(row=4, column=1, columnspan=2)
-        self.restart_button.grid(row=4, column=3)
+        self.restart_button.grid(row=4, column=3, columnspan=2)
 
         for row in range(self.grid_size[1]):
             for col in range(self.grid_size[0]):
                     cell = tkinter.Label(self.root, image=self.get_img(row, col))
                     cell.grid(row=row + 5, column=col, sticky="W")
                     self.grid[row][col] = cell
+
+        print_state(self.grid_size, self.state)
 
     def restart(self):
         print("restart")
@@ -215,7 +220,7 @@ class Display:
         Methode appelé pour lancer l'UI        
         """
         self.init()
-        self.update()
+        self.root.after(2000, self.update)
         self.root.attributes("-topmost", True)
         self.root.mainloop()
 
