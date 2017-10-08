@@ -3,6 +3,7 @@
 from Simulator import Simulator
 from State import *
 from utilities import *
+import pickle
 
 
 # ---------------- Constantes --------------- #
@@ -10,11 +11,7 @@ from utilities import *
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-<<<<<<< HEAD
-TIME_LIMIT = 30
-=======
 TIME_LIMIT = 30  # en seconde
->>>>>>> 5edad067b841700546858456495663a645ef8b42
 ALPHA = 0.5
 # Proba
 MOVING_PROBA = 1
@@ -28,10 +25,6 @@ DEAD_REWARD = -500
 CHARGING_REWARD = 0
 BUMPING_REWARD = -20
 MOVING_TO_DIRTY_REWARD = 10
-<<<<<<< HEAD
-FULL_CHARGE_REWARD = 10
-=======
->>>>>>> 5edad067b841700546858456495663a645ef8b42
 # ------------------------------------------- #
 
 
@@ -56,26 +49,18 @@ if __name__ == "__main__":
     print("nombre d'états:", len(all_states))
 
     # Algo d'optimisation
-    # policy = dynamic_programming(all_states, simulator, T)
-    policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
+    policy = dynamic_programming(all_states, simulator, T)
+    # policy = q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA)
 
-<<<<<<< HEAD
 
-    # Display
-    state = {
-=======
     # Display
     initial_state = {
->>>>>>> 5edad067b841700546858456495663a645ef8b42
         "base_pos": [0, 0],
         "robot_pos": [0, 0],
         "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
         "battery_level": MAX_BATTERY_LEVEL
     }
-<<<<<<< HEAD
-    display = Display(policy, GRID_SIZE, MAX_BATTERY_LEVEL, state)
-=======
+
     display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state)
->>>>>>> 5edad067b841700546858456495663a645ef8b42
     display.run()
 

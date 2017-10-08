@@ -196,11 +196,7 @@ class Simulator:
                 return self.bumping_reward, \
                        [(self.moving_proba, Actions.unload(state)), (1 - self.moving_proba, Actions.unload(state))]
             else:
-<<<<<<< HEAD
-                if state["robot_pos"][1] not in [pos[1] for pos in state["dirty_cells"]]:
-=======
                 if state["robot_pos"][1] in [pos[1] for pos in state["dirty_cells"]]:
->>>>>>> 5edad067b841700546858456495663a645ef8b42
                     return self.moving_to_dirty_reward, \
                            [(self.moving_proba, Actions.move_left(state, self.grid_size)), (1 - self.moving_proba, Actions.unload(state))]
                 else:

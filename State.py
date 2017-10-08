@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import tkinter
-<<<<<<< HEAD
-from tkinter.ttk import Progressbar
-import itertools
-import Actions
-from threading import Thread
-=======
 from tkinter.ttk import Progressbar, Style
 import Actions
->>>>>>> 5edad067b841700546858456495663a645ef8b42
 
 
 def print_state(grid_size, state):
@@ -35,15 +28,9 @@ class Display:
     """
     Class affichant l'état du système à l'aide de tkinter 
     """
-<<<<<<< HEAD
-    def __init__(self, p, grid_size, maximum_battery, state):
-        self.policy = p
-        self.root = tkinter.Tk()
-=======
     def __init__(self, simulator, p, grid_size, maximum_battery, state):
         self.simulator = simulator
         self.policy = p
->>>>>>> 5edad067b841700546858456495663a645ef8b42
         self.grid_size = grid_size
         self.maximum_battery = maximum_battery
         self.state = state
@@ -104,33 +91,6 @@ class Display:
         """
         Méthode mettant à jour régulièrement l'UI
         """
-<<<<<<< HEAD
-        self.clear_grid()
-        action = self.policy[str(self.state), 1]
-        self.do_action(action)
-        self.progess.configure(value=self.state["battery_level"])
-        print(action)
-        print_state(self.grid_size, self.state)
-        self.init()
-
-        self.root.after(800, self.update)
-
-    def do_action(self, action):
-
-        if action == "move_up":
-            self.state = Actions.move_up(self.state, self.grid_size)
-        elif action == "move_down":
-            self.state = Actions.move_down(self.state, self.grid_size)
-        elif action == "move_right":
-            self.state = Actions.move_right(self.state, self.grid_size)
-        elif action == "move_left":
-            self.state = Actions.move_left(self.state, self.grid_size)
-        elif action == "load":
-            self.state = Actions.load(self.state)
-        elif action == "clean":
-            self.state = Actions.clean(self.state)
-
-=======
         try:
             action = self.policy[str(self.state), 1]
             print("action:", action)
@@ -180,7 +140,6 @@ class Display:
                    else Actions.unload(self.state)
         elif action == "dead" or action == "stay":
             return self.state
->>>>>>> 5edad067b841700546858456495663a645ef8b42
 
     def clear_grid(self):
         """

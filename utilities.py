@@ -160,7 +160,7 @@ def monte_carlo(all_states, simulator, T, time_limit):
         for t in range(T):
             for action in action_list:
                 q_value_function[str(state), t, action] = 0
-    pi = (q_value_function, 0.5, len(q_value_function))
+    pi = epsilon_policy(q_value_function, 0.5, len(q_value_function))
 
     start_time = time.time()
     while time.time() - start_time < time_limit:
@@ -169,7 +169,7 @@ def monte_carlo(all_states, simulator, T, time_limit):
         episode = []
         s0 = choice(all_states) #je pense qu'il faut utiliser "pi" pour trouver s0, mais je ne sais pas comment faire
         for t in range(T):
-            a0 = random.choice(action_list)
+            a0 = choice(action_list)
             s1, r0 = simulator.get(a0, s0)
             episode.append([s0, a0, r0])
             s0 = s1
@@ -178,10 +178,10 @@ def monte_carlo(all_states, simulator, T, time_limit):
         c = 0
         for s, a in episode:
             for i in range(len(episode)):
-                if (episode[i][0] == s && episode[i][1] == a):
+                if episode[i][0] == s and episode[i][1] == a:
                     g += episode[i][2]
                     c += 1
             q_value_function[s, t, a] = g / c
 
         # Mise à jour de politiques
-        pi = (q_value_function, epsilon = 0.5, len(q_value_function))
+        pi = epsilon_policy(q_value_function, 0.5, len(q_value_function))
