@@ -75,7 +75,14 @@ def clean(s):
     :return new_state: le nouvel état
     """
     new_state = unload(s)
+<<<<<<< HEAD
     new_state["dirty_cells"].remove(s["robot_pos"])
+=======
+    # try:
+    new_state["dirty_cells"].remove(s["robot_pos"])
+    # except ValueError:
+    #     print("Trying to clean a clean cell")
+>>>>>>> 5edad067b841700546858456495663a645ef8b42
     return new_state
 
 
