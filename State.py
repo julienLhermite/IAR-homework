@@ -50,6 +50,12 @@ class Display:
         self.robot_pos_label = tkinter.Label(self.root, text="robot_pos:")
         self.robot_pos_entry = tkinter.Entry(self.root)
 
+        self.battery_level_label = tkinter.Label(self.root, text="battery_level:")
+        self.battery_level_entry = tkinter.Entry(self.root)
+
+        self.base_pos_label = tkinter.Label(self.root, text="base_pos:")
+        self.base_pos_entry = tkinter.Entry(self.root)
+
         self.dirty_cell_label = tkinter.Label(self.root, text="dirty_cells:")
         self.dirty_cell_entry = tkinter.Entry(self.root)
 
@@ -83,21 +89,26 @@ class Display:
         """
         Méthode mettant à jour régulièrement l'UI
         """
-        action = self.policy[str(self.state), 1]
-        new_state = self.do_action(action)
-        diffs = self.get_diff(new_state)
+        try:
+            action = self.policy[str(self.state), 1]
 
-        print(action)
-        if diffs:
-            self.state = new_state
-            print_state(self.grid_size, self.state)
+            new_state = self.do_action(action)
+            diffs = self.get_diff(new_state)
 
-        for diff in diffs:
-            if diff == "battery_level":
-                self.progess.configure(value=self.state["battery_level"])
-            else:
-                col, row = diff
-                self.grid[row][col].configure(image=self.get_img(row, col))
+            print(action)
+            if diffs:
+                self.state = new_state
+                print_state(self.grid_size, self.state)
+
+            for diff in diffs:
+                if diff == "battery_level":
+                    self.progess.configure(value=self.state["battery_level"])
+                else:
+                    col, row = diff
+                    self.grid[row][col].configure(image=self.get_img(row, col))
+        except KeyError as e:
+            print("La configuration est invalide")
+            print("KeyError", e)
 
         self.root.after(800, self.update)
 
@@ -158,31 +169,42 @@ class Display:
         Initialise l'affichage de l'UI
         """
         self.robot_pos_entry.insert(0, str(self.state["robot_pos"]))
+        self.base_pos_entry.insert(0, str(self.state["base_pos"]))
+        self.battery_level_entry.insert(0, str(self.state["battery_level"]))
         self.dirty_cell_entry.insert(0, str(self.state["dirty_cells"]))
 
-        self.dirty_cell_label.grid(row=0, columnspan=2)
-        self.dirty_cell_entry.grid(row=0, column=2, columnspan=4)
+        self.base_pos_label.grid(row=0, columnspan=2)
+        self.base_pos_entry.grid(row=0, column=2, columnspan=4)
 
         self.robot_pos_label.grid(row=1, columnspan=2)
         self.robot_pos_entry.grid(row=1, column=2, columnspan=4)
 
-        self.battery_label.grid(row=2)
-        self.progess.grid(row=2, column=1, columnspan=2)
-        self.restart_button.grid(row=2, column=3)
+        self.battery_level_label.grid(row=2, columnspan=2)
+        self.battery_level_entry.grid(row=2, column=2, columnspan=4)
+
+        self.dirty_cell_label.grid(row=3, columnspan=2)
+        self.dirty_cell_entry.grid(row=3, column=2, columnspan=4)
+
+        self.battery_label.grid(row=4)
+        self.progess.grid(row=4, column=1, columnspan=2)
+        self.restart_button.grid(row=4, column=3)
 
         for row in range(self.grid_size[1]):
             for col in range(self.grid_size[0]):
                     cell = tkinter.Label(self.root, image=self.get_img(row, col))
-                    cell.grid(row=row + 3, column=col, sticky="W")
+                    cell.grid(row=row + 5, column=col, sticky="W")
                     self.grid[row][col] = cell
 
     def restart(self):
+        print("restart")
         self.init_state["robot_pos"] = [int(i) for i in self.robot_pos_entry.get() if i not in ["[", "]", " ", ","]]
+        self.init_state["base_pos"] = [int(i) for i in self.base_pos_entry.get() if i not in ["[", "]", " ", ","]]
+        self.init_state["battery_level"] = int(self.battery_level_entry.get())
         temp_list = self.dirty_cell_entry.get().replace("[", "").replace("]", "").split(', ')
-        self.init_state["dirty_cells"] = [[int(temp_list[i]), int(temp_list[i+1])] for i in range(0, len(temp_list) - 1, 2)]
+        self.init_state["dirty_cells"] = sorted([[int(temp_list[i]), int(temp_list[i+1])] for i in range(0, len(temp_list) - 1, 2)])
 
-        self.robot_pos_entry.delete(0, "end")
-        self.dirty_cell_entry.delete(0, "end")
+        for elem in [self.battery_level_entry, self.base_pos_entry, self.robot_pos_entry, self.dirty_cell_entry]:
+            elem.delete(0, "end")
 
         self.state = self.init_state
         self.clear_grid()
