@@ -3,7 +3,7 @@
 import itertools
 import Actions
 import time
-from random import randint
+from random import choice
 
 def get_possible_dirty_cells(grid_size, base_pos):
     """
@@ -143,3 +143,45 @@ def q_learning(all_states, simulator, T, time_limit, alpha):
         policy[str(state), 1] = action_list[action_index]
 
     return policy
+
+
+def epsilon_policy(q, epsilon, nb_action):
+    policy = [1] * nb_action
+    policy = [i * epsilon / nb_action for i in policy]
+    policy[q.index(max(q))] += 1 - epsilon
+    return policy
+
+
+def monte_carlo(all_states, simulator, T, time_limit):
+    # Initialisation de la politique et de la fonction de valeur
+    q_value_function = dict()
+    action_list = ["move_up", "move_down", "move_right", "move_left", "clean", "dead", "load", "stay"]
+    for state in all_states:
+        for t in range(T):
+            for action in action_list:
+                q_value_function[str(state), t, action] = 0
+    pi = (q_value_function, 0.5, len(q_value_function))
+
+    start_time = time.time()
+    while time.time() - start_time < time_limit:
+        print("new iteration")
+        # Génération d'épisode
+        episode = []
+        s0 = random.choice(all_states) #je pense qu'il faut utiliser "pi" pour trouver s0, mais je ne sais pas comment faire
+        for t in range(T):
+            a0 = random.choice(action_list)
+            s1, r0 = simulator.get(a0, s0)
+            episode.append([s0, a0, r0])
+            s0 = s1
+
+        g = 0
+        c = 0
+        for s, a in episode:
+            for i in range(len(episode)):
+                if (episode[i][0] == s && episode[i][1] == a):
+                    g += episode[i][2]
+                    c += 1
+            q_value_function[s, t, a] = g / c
+
+        # Mise à jour de politiques
+        pi = (q_value_function, epsilon = 0.5, len(q_value_function))
