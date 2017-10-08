@@ -10,11 +10,11 @@ from utilities import *
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 20  # en seconde
-ALPHA = 0.9
+TIME_LIMIT = 30  # en seconde
+ALPHA = 0.5
 # Proba
 MOVING_PROBA = 1
-CLEANING_PROBA = 0.9
+CLEANING_PROBA = 1
 CHARGING_PROBA = 1
 # Reward
 MOVING_REWARD = -5
@@ -24,7 +24,6 @@ DEAD_REWARD = -500
 CHARGING_REWARD = 0
 BUMPING_REWARD = -20
 MOVING_TO_DIRTY_REWARD = 10
-FULL_CHARGE_REWARD = 10
 # ------------------------------------------- #
 
 

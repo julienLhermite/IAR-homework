@@ -62,8 +62,7 @@ class Display:
         self.progess = Progressbar(self.root, orient="horizontal", mode="determinate", maximum=self.maximum_battery,
                                    value=self.state["battery_level"])
 
-        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart, font="Arial 10 bold",
-                                             width=5, height=3)
+        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart, font="Arial 10 bold")
 
         self.grid = [[None for _ in range(self.grid_size[0])] for _ in range(self.grid_size[1])]
 
