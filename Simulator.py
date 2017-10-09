@@ -227,7 +227,7 @@ class Simulator:
                    [(1, state)]
 
         proba = self.get_proba(action)
-        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"]:
+        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"] and state["battery_level"] == self.max_battery_level:
             if proba == 1:
                 return self.goal_reward,\
                        [(1, self.do_action(action, state))]

@@ -7,7 +7,7 @@ import sys
 
 # ---------------- Constantes --------------- #
 # Système
-GRID_SIZE = (2, 2)
+GRID_SIZE = (3, 2)
 MAX_BATTERY_LEVEL = 10
 T = 8 * GRID_SIZE[0] * GRID_SIZE[1]
 TIME_LIMIT = 1200  # en seconde
