@@ -288,6 +288,7 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
     # print("Etat:", s0, "\nActions possibles", simulator.get_actions(s0), "---->", a0)# Pour Debug
 
     # Algorithme de Q Learning
+    iteration = 0
     start_time = time.time()
     while time.time() - start_time < time_limit:
         # print("q_Learning iteration, elapsed time:", time.time() - start_time)
@@ -300,6 +301,10 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
         # print("Nouvelle valeur:", q_function[str(s0), a0])
         s0 = future_state
         a0 = future_action
+        iteration += 1
+        if iteration//100 == 1:
+            iteration = 0
+            epsilon /=2 
 
     # Mise à jour de la politique
     policy = dict()
@@ -312,7 +317,7 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
         # Get all max value index
         max_value, indexes = get_all_max(q_action_list)
         action_index = choice(indexes)
-        # action_index = q_action_list.index(max(q_action_list))
+        # raction_index = q_action_list.index(max(q_action_list))
         # if state["robot_pos"] == [1, 0]:
         #     print(action_list)
         #     print(q_action_list)
