@@ -77,6 +77,9 @@ class Simulator:
         :param state: un état du système
         :return state, reward: l'état suivant et une récompense 
         """
+        # état dead,  pour tt action --> -100
+        # état final pour toute action --> 100
+        # tout les autres --> -0.5
 
         if action == "clean":
             # si j'ai nettoyé

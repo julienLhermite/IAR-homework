@@ -62,7 +62,8 @@ class Display:
         self.progess = Progressbar(self.root, orient="horizontal", mode="determinate", maximum=self.maximum_battery,
                                    value=self.state["battery_level"])
 
-        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart, font="Arial 10 bold")
+        self.restart_button = tkinter.Button(self.root, text="Restart", command=self.restart, font="Arial 10 bold",
+                                             width=10)
 
         self.grid = [[None for _ in range(self.grid_size[0])] for _ in range(self.grid_size[1])]
 
@@ -109,7 +110,7 @@ class Display:
                     col, row = diff
                     self.grid[row][col].configure(image=self.get_img(row, col))
         except KeyError as e:
-            print("La configuration est invalide")
+            print("La configuration est invalide, l'état est inconnu")
             print("KeyError", e)
 
         self.root.after(1000, self.update)
