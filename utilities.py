@@ -237,7 +237,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
     start_time = time.time()
     while time.time() - start_time < time_limit:
-        # print("monte_carlo iteration, elapsed time:", time.time() - start_time)
+        print("monte_carlo iteration, elapsed time:", time.time() - start_time)
 
         # generation d'un episode
         episode = []
