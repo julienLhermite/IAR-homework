@@ -221,7 +221,7 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
 
 
 def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, initial_state):
-    # s0 = initial_state
+    s0 = initial_state
     # action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
 
     # Initialisation de la q_function et la policy
@@ -237,7 +237,6 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
     start_time = time.time()
     while time.time() - start_time < time_limit:
-        s0 = choice(all_states)
         # print("monte_carlo iteration, elapsed time:", time.time() - start_time)
 
         # generation d'un episode
@@ -314,5 +313,6 @@ def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha):
         policy[str(state)] = action_list[action_index]
 
     # Display
+    # evaluation de performance v(s0) max Q(s,a)
 
     return policy
