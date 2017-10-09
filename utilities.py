@@ -46,7 +46,7 @@ def get_all_states(max_battery_level, grid_size):
     return states
 
 
-def dynamic_programming(all_states, simulator, T):
+def our_dynamic_programming(all_states, simulator, T):
     """
     Implémentation de l'optimisation de la politique par dynamic programming
     :param all_states: la liste de tous les états
@@ -88,6 +88,49 @@ def dynamic_programming(all_states, simulator, T):
                 best_action = action_list[value.index(max_value)]
                 value_function[str(state), t] = max_value
                 policy[str(state), t] = best_action
+
+    return policy
+
+
+def dynamic_programming(all_states, simulator, gamma, epsilon):
+    """
+    Implémentation de l'optimisation de la politique par dynamic programming
+    :param all_states: la liste de tous les états
+    :param simulator: le simulateur
+    :param gamma:
+    :param epsilon:
+    :return policy: la politique optimale 
+    """
+
+    # Initialisation de la politique et de la fonction de valeur
+    value_function = dict()
+    value_function_bis = dict()
+    policy = dict()
+    for state in all_states:
+        value_function[str(state)] = 0
+        value_function_bis[str(state)] = 1
+        policy[str(state)] = "stay"
+
+    stop_criteria = max([abs(value_function[i] - value_function_bis[i]) for i in value_function.keys()])
+    while stop_criteria > epsilon:
+        value_function_bis = Actions.reasign(value_function)
+
+        for state in all_states:
+            to_maximize = []
+            action_list = simulator.get_actions(state)
+            for i, action in enumerate(action_list):
+                reward, future = simulator.get_with_model(action, state)
+                to_maximize.append(reward)
+
+                for proba, future_state in future:
+                    to_maximize[i] += gamma * proba * value_function[str(future_state)]
+
+            value_function[str(state)] = max(to_maximize)
+            opti_action = action_list[to_maximize.index(value_function[str(state)])]
+            policy[str(state)] = opti_action
+
+        stop_criteria = max([abs(value_function[i] - value_function_bis[i]) for i in value_function.keys()])
+        print("dynamic programming iteration:", stop_criteria, "<", epsilon, "?")
 
     return policy
 
@@ -145,43 +188,54 @@ def q_learning(all_states, simulator, T, time_limit, alpha):
     return policy
 
 
-def epsilon_policy(q, epsilon, nb_action):
-    policy = [1] * nb_action
-    policy = [i * epsilon / nb_action for i in policy]
-    policy[q.index(max(q))] += 1 - epsilon
-    return policy
+def a_epsilon_greedy(simulator, state, epsilon, action_list, policy):
+    if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
+        print(1 - epsilon + epsilon / len(action_list), "politique")
+        return policy[str(state)]
+    else:
+        a = choice(action_list)
+        print(1 - epsilon + epsilon / len(action_list), "hasard:", a)
+        return a
 
 
-def monte_carlo(all_states, simulator, T, time_limit):
-    # Initialisation de la politique et de la fonction de valeur
-    q_value_function = dict()
-    action_list = ["move_up", "move_down", "move_right", "move_left", "clean", "dead", "load", "stay"]
+def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
+    s0 = choice(all_states)
+    action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
+
+    # Initialisation de la q_function et la policy
+    q_function = dict()
+    policy = dict()
     for state in all_states:
-        for t in range(T):
-            for action in action_list:
-                q_value_function[str(state), t, action] = 0
-    pi = epsilon_policy(q_value_function, 0.5, len(q_value_function))
+        policy[str(state)] = "stay"
+        for action in action_list:
+            q_function[str(state), action] = 0
 
     start_time = time.time()
     while time.time() - start_time < time_limit:
-        print("new iteration")
-        # Génération d'épisode
+        print("monte_carlo iteration, elapsed time:", time.time() - start_time)
+
+        # generation d'un episode
         episode = []
-        s0 = choice(all_states) #je pense qu'il faut utiliser "pi" pour trouver s0, mais je ne sais pas comment faire
         for t in range(T):
-            a0 = choice(action_list)
-            s1, r0 = simulator.get(a0, s0)
-            episode.append([s0, a0, r0])
-            s0 = s1
+            a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(state), policy)
+            # print(s0, a0)
+            reward, future_state = simulator.get(a0, s0)
+            episode.append((s0, a0, reward))
+            s0 = future_state
 
-        g = 0
-        c = 0
-        for s, a in episode:
-            for i in range(len(episode)):
-                if episode[i][0] == s and episode[i][1] == a:
-                    g += episode[i][2]
-                    c += 1
-            q_value_function[s, t, a] = g / c
+        # calcul du retour
+        retour = sum([e[2] * gamma ** (len(episode) - i) for i, e in enumerate(episode)])
+        for i, event in enumerate(episode):
+            retour -= event[2] * gamma ** (len(episode) - i)
+            q_function[str(event[0]), event[1]] += alpha * (retour - q_function[str(event[0]), event[1]])
 
-        # Mise à jour de politiques
-        pi = epsilon_policy(q_value_function, 0.5, len(q_value_function))
+    # Mise a jour de la politique
+    for state in all_states:
+        q_action_list = [q_function[str(state), action] for action in action_list]
+        action_index = q_action_list.index(max(q_action_list))
+        # if state["robot_pos"] == [1, 0]:
+        #     print(action_list)
+        #     print(q_action_list)
+        policy[str(state)] = action_list[action_index]
+
+    return policy

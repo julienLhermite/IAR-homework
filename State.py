@@ -3,6 +3,7 @@
 import tkinter
 from tkinter.ttk import Progressbar, Style
 import Actions
+import os
 
 
 def print_state(grid_size, state):
@@ -38,13 +39,14 @@ class Display:
 
         # tk object
         self.root = tkinter.Tk()
-        self.s_img = tkinter.PhotoImage(file="img/S.gif")
-        self.br_img = tkinter.PhotoImage(file="img/BR.gif")
-        self.b_img = tkinter.PhotoImage(file="img/B.gif")
-        self.sr_img = tkinter.PhotoImage(file="img/SR.gif")
-        self.r_img = tkinter.PhotoImage(file="img/R.gif")
-        self.default_img = tkinter.PhotoImage(file="img/default.gif")
-        self.battery_img = tkinter.PhotoImage(file="img/battery.gif")
+        dirname = os.path.dirname(os.path.abspath(__file__))
+        self.s_img = tkinter.PhotoImage(file=dirname + "/img/S.gif")
+        self.br_img = tkinter.PhotoImage(file=dirname + "/img/BR.gif")
+        self.b_img = tkinter.PhotoImage(file=dirname + "/img/B.gif")
+        self.sr_img = tkinter.PhotoImage(file=dirname + "/img/SR.gif")
+        self.r_img = tkinter.PhotoImage(file=dirname + "/img/R.gif")
+        self.default_img = tkinter.PhotoImage(file=dirname + "/img/default.gif")
+        self.battery_img = tkinter.PhotoImage(file=dirname + "/img/battery.gif")
         self.battery_label = tkinter.Label(self.root, image=self.battery_img)
 
         self.robot_pos_label = tkinter.Label(self.root, text="robot_pos:")
@@ -93,7 +95,7 @@ class Display:
         Méthode mettant à jour régulièrement l'UI
         """
         try:
-            action = self.policy[str(self.state), 1]
+            action = self.policy[str(self.state)]
             print("action:", action)
 
             new_state = self.do_action(action)
