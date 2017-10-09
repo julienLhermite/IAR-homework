@@ -116,7 +116,6 @@ class Simulator:
         else:
             return 1
 
-
     def get(self, action, state):
         """
         Etant donné une action et un état, retourne l'état suivant et une récompense

@@ -10,7 +10,7 @@ import sys
 GRID_SIZE = (3, 2)
 MAX_BATTERY_LEVEL = 12
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 150  # en seconde
+TIME_LIMIT = 30  # en seconde
 ALPHA = 0.01
 EPSILON = 0.3
 GAMMA = 0.95
@@ -75,7 +75,6 @@ if __name__ == "__main__":
         policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA)
 
     # Display
-
 
     display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state)
     display.run()
