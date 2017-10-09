@@ -4,6 +4,7 @@ import random
 import copy
 import Actions
 
+
 class Simulator:
 
     def __init__(self, grid_size, max_battery_level, moving_proba, cleaning_proba, charging_proba,
@@ -132,7 +133,7 @@ class Simulator:
                    state
 
         proba = self.get_proba(action)
-        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"]:
+        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"] and state["battery_level"] == 10:
             return self.goal_reward,\
                    self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
 
@@ -228,7 +229,7 @@ class Simulator:
                    [(1, state)]
 
         proba = self.get_proba(action)
-        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"]:
+        if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"] and state["battery_level"] == 10:
             if proba == 1:
                 return self.goal_reward,\
                        [(1, self.do_action(action, state))]

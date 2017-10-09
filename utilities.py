@@ -4,6 +4,7 @@ import itertools
 import Actions
 import time
 from random import choice
+from State import print_state
 
 def get_possible_dirty_cells(grid_size, base_pos):
     """
@@ -262,46 +263,61 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
     return policy
 
 
-def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha):
+def get_all_max(list):
+    """
+    Fonction qui renvoie un couple avec la valeur max et l'ensemble des indices qui sont à ce max
+    :param list: liste de nombres
+    :return: couple avec max_value et liste d'indice de la max value
+    """
+    max_value = max(list)
+    indexes = [index for index, element in enumerate(list) if element == max_value]
+    return max_value, indexes
+
+
+def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon, alpha):
 
     # Initialisation de la q_function et la policy
     q_function = dict()
-    policy = dict()
     for state in all_states:
-        policy[str(state)] = "move_up"
-        for action in simulator.get_actions(state):
+        possible_actions = simulator.get_actions(state)
+        for action in possible_actions:
             q_function[str(state), action] = 0
 
-    s0 = choice(all_states)
-    a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(s0), policy)
-    print("Etat:", s0, "\nActions possibles", simulator.get_actions(s0), "---->", a0)# Pour Debug
+    s0 = initial_state
+    a0 = choice(simulator.get_actions(s0))
+    # print("Etat:", s0, "\nActions possibles", simulator.get_actions(s0), "---->", a0)# Pour Debug
 
     # Algorithme de Q Learning
     start_time = time.time()
-    t = 0# Pour Debug
     while time.time() - start_time < time_limit:
         # print("q_Learning iteration, elapsed time:", time.time() - start_time)
         reward, future_state = simulator.get(a0, s0)
+        print_state(simulator.grid_size, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
-        if t == 0:# Pour Debug
-            print("Valeur actuelle:", q_function[str(s0), a0], "Valeur ajoutée:", alpha*delta)
+        # print("Valeur actuelle:", q_function[str(s0), a0], "Valeur ajoutée:", alpha*delta)
         q_function[str(s0), a0] += alpha*delta
-        if t == 0:# Pour Debug
-            print("Nouvelle valeur:", q_function[str(s0), a0])
+        # print("Nouvelle valeur:", q_function[str(s0), a0])
         s0 = future_state
         a0 = future_action
-        t += 1
 
     # Mise à jour de la politique
+    policy = dict()
+    nb = 0
     for state in all_states:
         action_list = simulator.get_actions(state)
         q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_action_list.index(max(q_action_list))
+        if q_action_list == [0 for a in range(len(q_action_list))]:
+            nb += 1
+        # Get all max value index
+        max_value, indexes = get_all_max(q_action_list)
+        action_index = choice(indexes)
+        # action_index = q_action_list.index(max(q_action_list))
         # if state["robot_pos"] == [1, 0]:
         #     print(action_list)
         #     print(q_action_list)
         policy[str(state)] = action_list[action_index]
+    print("Nombre de vecteur nul: ", nb)
 
     # Display
 
