@@ -9,8 +9,8 @@ import sys
 # Système
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
-T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 30  # en seconde
+T = 8 * GRID_SIZE[0] * GRID_SIZE[1]
+TIME_LIMIT = 1200  # en seconde
 ALPHA = 0.01
 EPSILON = 0.01
 GAMMA = 0.95
@@ -57,6 +57,13 @@ if __name__ == "__main__":
     all_states = get_all_states(MAX_BATTERY_LEVEL, GRID_SIZE)
     print("nombre d'états:", len(all_states))
 
+    initial_state = {
+        "base_pos": [0, 0],
+        "robot_pos": [0, 0],
+        "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
+        "battery_level": MAX_BATTERY_LEVEL
+    }
+
     # Algo d'optimisation
     if sys.argv[1] == "dynamic_programming":
         policy = dynamic_programming(all_states, simulator, GAMMA, EPSILON)
@@ -65,15 +72,11 @@ if __name__ == "__main__":
         #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
         policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
     elif sys.argv[1] == "monte_carlo":
-        policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA)
+        policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state)
+    else:
+        print("Argument invalide")
+        sys.exit(-1)
 
     # Display
-    initial_state = {
-        "base_pos": [0, 0],
-        "robot_pos": [0, 0],
-        "dirty_cells": [[x, y] for x in range(GRID_SIZE[0]) for y in range(GRID_SIZE[1]) if [x, y] != [0, 0]],
-        "battery_level": MAX_BATTERY_LEVEL
-    }
-
     display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state)
     display.run()
