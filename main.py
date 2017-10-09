@@ -7,10 +7,10 @@ import sys
 
 # ---------------- Constantes --------------- #
 # Système
-GRID_SIZE = (3, 2)
+GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 4 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 2  # en seconde
+TIME_LIMIT = 30  # en seconde
 ALPHA = 0.01
 EPSILON = 0.01
 GAMMA = 0.95
@@ -62,8 +62,8 @@ if __name__ == "__main__":
         policy = dynamic_programming(all_states, simulator, GAMMA, EPSILON)
         # policy = our_dynamic_programming(all_states, simulator, T)
     elif sys.argv[1] == "q_learning":
-        policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
-        policy =  q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
+        #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
+        policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
     elif sys.argv[1] == "monte_carlo":
         policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA)
 

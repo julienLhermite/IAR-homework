@@ -211,11 +211,11 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
         q_action_list = [q_function[str(state), action] for action in action_list]
         action_index = q_action_list.index(max(q_action_list))
-        print(1 - epsilon + epsilon / len(action_list), "Qvaleur maximisée")
+        # print(1 - epsilon + epsilon / len(action_list), "Qvaleur maximisée")
         return action_list[action_index]
     else:
         a = choice(action_list)
-        print(1 - epsilon + epsilon / len(action_list), "Qvaleur hasard")
+        # print(1 - epsilon + epsilon / len(action_list), "Qvaleur hasard")
         return a
 
 
@@ -227,7 +227,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
     q_function = dict()
     policy = dict()
     for state in all_states:
-        policy[str(state)] = "stay"
+        policy[str(state)] = "move_up"
         for action in action_list:
             q_function[str(state), action] = 0
 
@@ -263,31 +263,39 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
 
 
 def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha):
-    s0 = choice(all_states)
-    action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
 
     # Initialisation de la q_function et la policy
     q_function = dict()
     policy = dict()
     for state in all_states:
-        policy[str(state)] = "stay"
-        for action in action_list:
+        policy[str(state)] = "move_up"
+        for action in simulator.get_actions(state):
             q_function[str(state), action] = 0
+
+    s0 = choice(all_states)
+    a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(s0), policy)
+    print("Etat:", s0, "\nActions possibles", simulator.get_actions(s0), "---->", a0)
 
     # Algorithme de Q Learning
     start_time = time.time()
+    t = 0
     while time.time() - start_time < time_limit:
-        print("q_Learning iteration, elapsed time:", time.time() - start_time)
-        a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(s0), policy)
+        # print("q_Learning iteration, elapsed time:", time.time() - start_time)
         reward, future_state = simulator.get(a0, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
+        if t == 0:
+            print("Valeur actuelle:", q_function[str(s0), a0], "Valeur ajoutée:", alpha*delta)
         q_function[str(s0), a0] += alpha*delta
+        if t == 0:
+            print("Nouvelle valeur:", q_function[str(s0), a0])
         s0 = future_state
         a0 = future_action
+        t += 1
 
     # Mise à jour de la politique
     for state in all_states:
+        action_list = simulator.get_actions(state)
         q_action_list = [q_function[str(state), action] for action in action_list]
         action_index = q_action_list.index(max(q_action_list))
         # if state["robot_pos"] == [1, 0]:

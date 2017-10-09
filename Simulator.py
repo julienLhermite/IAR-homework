@@ -136,7 +136,7 @@ class Simulator:
             return self.goal_reward,\
                    self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
 
-        return self.moving_reward, \
+        return self.moving_reward,\
                self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
 
 
