@@ -190,11 +190,11 @@ def our_q_learning(all_states, simulator, T, time_limit, alpha):
 
 def a_epsilon_greedy(simulator, state, epsilon, action_list, policy):
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
-        print(1 - epsilon + epsilon / len(action_list), "politique")
+        # print(1 - epsilon + epsilon / len(action_list), "politique")
         return policy[str(state)]
     else:
         a = choice(action_list)
-        print(1 - epsilon + epsilon / len(action_list), "hasard:", a)
+        # print(1 - epsilon + epsilon / len(action_list), "hasard:", a)
         return a
 
 
@@ -221,14 +221,17 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
 
 def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
     s0 = choice(all_states)
-    action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
+    # action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
 
     # Initialisation de la q_function et la policy
     q_function = dict()
     policy = dict()
     for state in all_states:
-        policy[str(state)] = "move_up"
-        for action in action_list:
+        possible_actions = simulator.get_actions(state)
+        policy[str(state)] = choice(possible_actions)
+        for action in possible_actions:
+            # if str(state) == "{'base_pos': [0, 0], 'robot_pos': [0, 0], 'dirty_cells': [[0, 1], [1, 1]], 'battery_level': 0}":
+            #     print('ok')
             q_function[str(state), action] = 0
 
     start_time = time.time()
@@ -238,7 +241,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
         # generation d'un episode
         episode = []
         for t in range(T):
-            a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(state), policy)
+            a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(s0), policy)
             # print(s0, a0)
             reward, future_state = simulator.get(a0, s0)
             episode.append((s0, a0, reward))
@@ -252,12 +255,12 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha):
 
     # Mise a jour de la politique
     for state in all_states:
-        q_action_list = [q_function[str(state), action] for action in action_list]
+        q_action_list = [q_function[str(state), action] for action in simulator.get_actions(state)]
         action_index = q_action_list.index(max(q_action_list))
         # if state["robot_pos"] == [1, 0]:
         #     print(action_list)
         #     print(q_action_list)
-        policy[str(state)] = action_list[action_index]
+        policy[str(state)] = simulator.get_actions(state)[action_index]
 
     return policy
 
