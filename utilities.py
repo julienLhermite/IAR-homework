@@ -9,7 +9,8 @@ from random import choice
 
 def get_possible_dirty_cells(grid_size, base_pos):
     """
-    Etant donné une taille de grille et une position de la base dans la grille, retourne la liste de toutes les combinaisons
+    Etant donné une taille de grille et une position de la base dans la grille, retourne la liste de toutes les
+    combinaisons
     de cellules salles possible
     :param grid_size: un tuple (x,y) représentant la taille de la grille
     :param base_pos: [x, y] la position de la base
@@ -200,14 +201,14 @@ def a_epsilon_greedy(simulator, state, epsilon, action_list, policy):
         return a
 
 
-def get_all_max(list):
+def get_all_max(my_list):
     """
     Fonction permettant de récupérer la valeur maximale d'une liste ainsi que l'ensemble des indices des valeurs max
-    :param list: Une liste de nombres
+    :param my_list: Une liste de nombres
     :return: Un couple max_value et une liste d'index
     """
-    max_value = max(list)
-    indexes = [index for index, value in enumerate(list) if value == max_value]
+    max_value = max(my_list)
+    indexes = [index for index, value in enumerate(my_list) if value == max_value]
     return max_value, indexes
 
 
@@ -216,7 +217,7 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     Fonction epsillon greedy qui renvoit l'action de la fonction de Qvaleur associée à un état
     :param simulator: Notre simulateur comprenant des focntionnalités de tirage aléatoire
     :param state: Etat du système actuel
-    :param epsillon: Paramètre de convergence
+    :param epsilon: Paramètre de convergence
     :param action_list: Liste des actions possibles pour l'état state
     :param q_function: Représentation de notre fonction de Qvaleur
     :return: l'action de la fonction de Qvaleur associée à un état selon la loie epsilon greedy
@@ -288,7 +289,18 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
 
 def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon, alpha):
-
+    """
+    Fonction implémentant l'algorithme qLearning
+    :param all_states: Ensemble des états possibles du système
+    :param initial_state: Etat de départ pour notre robot
+    :param simulator: Classe proposant un ensemble de fonction permettant de simuler le comportement du robt et son
+    environnement
+    :param time_limit: Durée de l'apprentissage de l'algorithme
+    :param gamma: paramètre de calcul
+    :param epsilon: paramètre de convergeance
+    :param alpha: paramètre de calcul
+    :return: Une politique et un couple (time_limit, max(Q(s0, ai)) pour évaluer la performance de l'agorithme
+    """
     # Initialisation de la q_function
     q_function = dict()
     for state in all_states:
@@ -320,8 +332,8 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
     policy = dict()
     for state in all_states:
         action_list = simulator.get_actions(state)
-        q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_action_list.index(max(q_action_list))
+        q_values_list = [q_function[str(state), action] for action in action_list]
+        action_index = q_values_list.index(max(q_values_list))
         # if state["robot_pos"] == [1, 0]:
         #     print(action_list)
         #     print(q_action_list)
@@ -329,6 +341,8 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
 
     # Display
     # evaluation de performance v(s0) = max Q(s0,a)
-    eval_perf = (time_limit, )
+    action_list = simulator.get_actions(initial_state)
+    q_values_list = [q_function[str(initial_state), action] for action in action_list]
+    eval_perf = (time_limit, max(q_values_list))
 
-    return policy
+    return policy, eval_perf
