@@ -9,23 +9,20 @@ import sys
 # Système
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
-T = 8 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 1200  # en seconde
+T = GRID_SIZE[0] * GRID_SIZE[1] * 6
+TIME_LIMIT = 600  # en seconde
 ALPHA = 0.01
-EPSILON = 0.01
+EPSILON = 0.1
 GAMMA = 0.95
 # Proba
-MOVING_PROBA = 0.9
-CLEANING_PROBA = 0.9
-CHARGING_PROBA = 0.9
+MOVING_PROBA = 1
+CLEANING_PROBA = 1
+CHARGING_PROBA = 1
 # Reward
 MOVING_REWARD = -5
-CLEANING_REWARD = 20
-GOAL_REWARD = 100
-DEAD_REWARD = -500
+GOAL_REWARD = 500
+DEAD_REWARD = -100
 CHARGING_REWARD = 0
-BUMPING_REWARD = -20
-MOVING_TO_DIRTY_REWARD = 10
 # ------------------------------------------- #
 
 
@@ -45,17 +42,16 @@ if __name__ == "__main__":
                           cleaning_proba=CLEANING_PROBA,
                           charging_proba=CHARGING_PROBA,
                           moving_reward=MOVING_REWARD,
-                          cleaning_reward=CLEANING_REWARD,
                           goal_reward=GOAL_REWARD,
                           dead_reward=DEAD_REWARD,
                           charging_reward=CHARGING_REWARD,
-                          bumping_reward=BUMPING_REWARD,
-                          moving_to_dirty_reward=MOVING_TO_DIRTY_REWARD,
                           )
 
     # Instantiate states list
     all_states = get_all_states(MAX_BATTERY_LEVEL, GRID_SIZE)
     print("nombre d'états:", len(all_states))
+    print("Time limit:", TIME_LIMIT)
+    print("T:", T)
 
     initial_state = {
         "base_pos": [0, 0],
@@ -66,17 +62,20 @@ if __name__ == "__main__":
 
     # Algo d'optimisation
     if sys.argv[1] == "dynamic_programming":
+        title = "DP"
         policy = dynamic_programming(all_states, simulator, GAMMA, EPSILON)
         # policy = our_dynamic_programming(all_states, simulator, T)
     elif sys.argv[1] == "q_learning":
         #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
+        title = "QL -> T: " + str(T) + ", time_limit: " + str(TIME_LIMIT)
         policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
     elif sys.argv[1] == "monte_carlo":
+        title = "MC -> T: " + str(T) + ", time_limit: " + str(TIME_LIMIT)
         policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state)
     else:
         print("Argument invalide")
         sys.exit(-1)
 
     # Display
-    display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state)
+    display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state, title)
     display.run()

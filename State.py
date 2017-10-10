@@ -29,7 +29,7 @@ class Display:
     """
     Class affichant l'état du système à l'aide de tkinter 
     """
-    def __init__(self, simulator, p, grid_size, maximum_battery, state):
+    def __init__(self, simulator, p, grid_size, maximum_battery, state, title):
         self.simulator = simulator
         self.policy = p
         self.grid_size = grid_size
@@ -39,6 +39,7 @@ class Display:
 
         # tk object
         self.root = tkinter.Tk()
+        self.root.title(title)
         dirname = os.path.dirname(os.path.abspath(__file__))
         self.s_img = tkinter.PhotoImage(file=dirname + "/img/S.gif")
         self.br_img = tkinter.PhotoImage(file=dirname + "/img/BR.gif")
