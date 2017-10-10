@@ -156,6 +156,9 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     start_time = time.time()
     time_spent, count = 0, 1
     while time.time() - start_time < time_limit:
+        if epsilon > 0.1:
+            epsilon /= 1.00001
+
         s0 = Actions.reasign(initial_state)
 
         # on print toutes les 10 secondes pour ne pas polluer la console
