@@ -200,6 +200,17 @@ def a_epsilon_greedy(simulator, state, epsilon, action_list, policy):
         return a
 
 
+def get_all_max(list):
+    """
+    Fonction permettant de récupérer la valeur maximale d'une liste ainsi que l'ensemble des indices des valeurs max
+    :param list: Une liste de nombres
+    :return: Un couple max_value et une liste d'index
+    """
+    max_value = max(list)
+    indexes = [index for index, value in enumerate(list) if value == max_value]
+    return max_value, indexes
+
+
 def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     """
     Fonction epsillon greedy qui renvoit l'action de la fonction de Qvaleur associée à un état
@@ -212,7 +223,7 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     """
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
         q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_action_list.index(max(q_action_list))
+        action_index = choice(get_all_max(q_action_list)[1])
         # print(1 - epsilon + epsilon / len(action_list), "Qvaleur maximisée")
         return action_list[action_index]
     else:
@@ -278,12 +289,10 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
 def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon, alpha):
 
-    # Initialisation de la q_function et la policy
+    # Initialisation de la q_function
     q_function = dict()
-    policy = dict()
     for state in all_states:
         possible_action = simulator.get_actions(state)
-        policy[str(state)] = choice(possible_action)
         for action in possible_action:
             q_function[str(state), action] = 0
 
@@ -308,6 +317,7 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
             epsilon /= 2
 
     # Mise à jour de la politique
+    policy = dict()
     for state in all_states:
         action_list = simulator.get_actions(state)
         q_action_list = [q_function[str(state), action] for action in action_list]
@@ -318,6 +328,7 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
         policy[str(state)] = action_list[action_index]
 
     # Display
-    # evaluation de performance v(s0) = max Q(s,a)
+    # evaluation de performance v(s0) = max Q(s0,a)
+    eval_perf = (time_limit, )
 
     return policy
