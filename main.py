@@ -12,7 +12,7 @@ MAX_BATTERY_LEVEL = 10
 T = 8 * GRID_SIZE[0] * GRID_SIZE[1]
 TIME_LIMIT = 1200  # en seconde
 ALPHA = 0.01
-EPSILON = 0.01
+EPSILON = 0.7
 GAMMA = 0.95
 # Proba
 MOVING_PROBA = 0.9
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         # policy = our_dynamic_programming(all_states, simulator, T)
     elif sys.argv[1] == "q_learning":
         #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
-        policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
+        policy = q_learning(all_states, initial_state, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
     elif sys.argv[1] == "monte_carlo":
         policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state)
     else:
