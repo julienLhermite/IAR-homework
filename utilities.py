@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import itertools
+import itertools, os
 import Actions
 import time
 import copy
 from State import print_state
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from random import choice
 
 
@@ -155,6 +158,9 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
     start_time = time.time()
     time_spent, count = 0, 1
+    iter = 0
+    mean_rewards, x = [], []
+    v_s0 = []
     while time.time() - start_time < time_limit:
         if epsilon > 0.1:
             epsilon /= 1.00001
@@ -163,7 +169,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
         # on print toutes les 10 secondes pour ne pas polluer la console
         time_spent = time.time() - start_time
-        if time_spent > 10 * count:
+        if time_spent > 5 * count:
             count += 1
             q_values_s0 = [q_function[str(s0), action] for action in simulator.get_actions(s0)]
             print("## monte_carlo iteration, elapsed time: {:05.2f}s |".format(time.time() - start_time),
@@ -172,6 +178,12 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             print("actions en s0:", simulator.get_actions(s0))
             print("q_val associées:",
                   ["{:05.2f}".format(q_function[str(s0), action]) for action in simulator.get_actions(s0)], "\n")
+            mean_reward = total_reward/T
+            mean_rewards.append(mean_reward)
+            v_s0.append(max(q_values_s0))
+            x.append(iter)
+            iter += 1
+
 
         # generation d'un episode
         episode = []
@@ -183,11 +195,13 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             episode.append((s0, a0, reward))
             s0 = future_state
 
+        total_reward = 0
         for t, event in enumerate(episode):
             # calcul du retour
             retour = 0
             for k in range(t, T + 1):
-                retour += (gamma ** (k - t)) * episode[k][2]
+                retour += (gamma ** (t -k)) * episode[k][2]
+            total_reward += event[2]
 
             # maj q _value
             q_function[str(event[0]), event[1]] += alpha * (retour - q_function[str(event[0]), event[1]])
@@ -197,6 +211,8 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             action_index = q_action_list.index(max(q_action_list))
             policy[str(event[0])] = simulator.get_actions(event[0])[action_index]
 
+
+
     # Print final
     print("### FIN du calcul ###")
     print("actions en s0:", simulator.get_actions(initial_state))
@@ -204,6 +220,25 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
           ["{:05.2f}".format(q_function[str(initial_state), action]) for action in simulator.get_actions(initial_state)])
     print("monte_carlo iteration, elapsed time: {:05.2f},".format(time.time() - start_time),
           "v(s0) = {:6.2f}".format(max([q_function[str(initial_state), action] for action in simulator.get_actions(initial_state)])))
+
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    print(dirname)
+    # plt.figure()
+    plt.plot(x, mean_rewards)
+    plt.title('Récompense moyenne par épisode - Monte-Carlo. T=' + str(T))
+    plt.ylabel('Récompense moyenne')
+    plt.xlabel('MC iteration')
+    plt.draw()
+
+    plt.savefig(dirname + "/MC_mean_reward_by_episode.png")
+
+    plt.clf()
+    plt.plot(x, v_s0)
+    plt.title('v(s0) - Monte-Carlo. T=' + str(T))
+    plt.ylabel('v(s0à')
+    plt.xlabel('MC iteration')
+    plt.draw()
+    plt.savefig(dirname + "/MC_v(s0).png")
 
     return policy
 
