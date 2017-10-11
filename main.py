@@ -10,7 +10,7 @@ import sys
 GRID_SIZE = (2, 2)
 MAX_BATTERY_LEVEL = 10
 T = 8 * GRID_SIZE[0] * GRID_SIZE[1]
-TIME_LIMIT = 1200  # en seconde
+TIME_LIMIT = 600 # en seconde
 ALPHA = 0.01
 EPSILON = 0.7
 GAMMA = 0.95

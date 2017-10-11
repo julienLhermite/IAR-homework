@@ -3,6 +3,7 @@
 import itertools
 import Actions
 import time
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -371,19 +372,23 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
     # Algorithme de Q Learning
     start_time = time.time()
     iteration = 0
+    total_reward = []
+    mean_reward = []
     while time.time() - start_time < time_limit:
         # print("q_Learning iteration, elapsed time:", time.time() - start_time)
         reward, future_state = simulator.get(a0, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
+        total_reward[iteration] = reward * gamma ** iteration
+        mean_reward[iteration] = sum(total_reward)/iteration
         q_function[str(s0), a0] += alpha*delta
         s0 = future_state
         a0 = future_action
         # Decreasing Episilon parameter
         iteration += 1
-        if iteration // 100 == 0:
+        if iteration // 100 == 0 and epsilon > 0.1:
             iteration = 0
-            epsilon /= 2
+            epsilon /= 1.00001
 
     # Mise à jour de la politique
     policy = dict()
@@ -396,10 +401,24 @@ def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon,
         #     print(q_action_list)
         policy[str(state)] = action_list[action_index]
 
-    # Display
-    # evaluation de performance v(s0) = max Q(s0,a)
-    action_list = simulator.get_actions(initial_state)
-    q_values_list = [q_function[str(initial_state), action] for action in action_list]
-    eval_perf = (time_limit, max(q_values_list))
+    # Tracé de la courbe total reward et average reward
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    print(dirname)
+    x = [indice for indice, value in enumerate(total_reward)]
+    plt.plot(x, mean_reward)
+    plt.title('Récompense moyenne des états analysés - Q Learning. Durée=' + str(time_limit))
+    plt.ylabel('Récompense moyenne')
+    plt.xlabel('Q Learning iteration')
+    plt.draw()
+
+    plt.savefig(dirname + "/QL_mean_reward_by_episode.png")
+
+    plt.clf()
+    plt.plot(x, v_s0)
+    plt.title('v(s0) - Monte-Carlo. T=' + str(T))
+    plt.ylabel('v(s0à')
+    plt.xlabel('MC iteration')
+    plt.draw()
+    plt.savefig(dirname + "/MC_v(s0).png")
 
     return policy, eval_perf
