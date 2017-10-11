@@ -3,6 +3,7 @@
 import itertools
 import Actions
 import time
+import matplotlib.pyplot as plt
 from State import print_state
 from random import choice
 
@@ -234,7 +235,18 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
 
 
 def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, initial_state):
-
+    """
+    Implémentation de l'optimisation de la politique par monte_carlo control
+    :param all_states: la liste de tous les états
+    :param simulator: le simulateur
+    :param time_limit: la limite de temps en seconde
+    :param T: la longueur des épisodes générés
+    :param gamma: un hyperparamètre
+    :param epsilon: un autre hyperparamètre
+    :param alpha: encore un
+    :param initial_state: l'état initial
+    :return policy: la politique
+    """
     # Initialisation de la q_function et la policy
     q_function = dict()
     policy = dict()
@@ -244,47 +256,90 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
         for action in possible_actions:
             q_function[str(state), action] = 0
 
-    time.sleep(3)
     start_time = time.time()
+    time_spent, count = 0, 1
+    iter = 0
+    mean_rewards, x = [], []
+    v_s0 = []
     while time.time() - start_time < time_limit:
+        if epsilon > 0.1:
+            epsilon /= 1.00001
+
         s0 = Actions.reasign(initial_state)
-        # print("monte_carlo iteration, elapsed time: {:05.2f},".format(time.time() - start_time),
-        #       "v(s0) = {:06.2f}".format(max([q_function[str(s0), action] for action in simulator.get_actions(s0)])))
+
+        # on print toutes les 10 secondes pour ne pas polluer la console
+        time_spent = time.time() - start_time
+        if time_spent > 5 * count:
+            count += 1
+            q_values_s0 = [q_function[str(s0), action] for action in simulator.get_actions(s0)]
+            print("## monte_carlo iteration, elapsed time: {:05.2f}s |".format(time.time() - start_time),
+                  "v(s0) = {:06.2f}".format(max(q_values_s0)),
+                  "  ##")
+            print("actions en s0:", simulator.get_actions(s0))
+            print("q_val associées:",
+                  ["{:05.2f}".format(q_function[str(s0), action]) for action in simulator.get_actions(s0)], "\n")
+            mean_reward = total_reward/T
+            mean_rewards.append(mean_reward)
+            v_s0.append(max(q_values_s0))
+            x.append(iter)
+            iter += 1
+
 
         # generation d'un episode
         episode = []
-        for t in range(T):
-            a0 = a_epsilon_greedy(simulator, s0, epsilon, simulator.get_actions(s0), policy)
+
+        for t in range(T + 1):
+            a0 = a_epsilon_greedy(simulator, s0, epsilon, policy)
             # print(s0, a0)
             reward, future_state = simulator.get(a0, s0)
             episode.append((s0, a0, reward))
             s0 = future_state
 
-        # calcul du retour
-        retour = sum([e[2] * gamma ** (len(episode) - i) for i, e in enumerate(episode)])
-        # for s, a, r in episode:
-        #     print_state(simulator.grid_size, s)
-        #     print("action:", a, "reward:", r)
-        # print("retour:", retour)
-        for i, event in enumerate(episode):
-            retour -= event[2] * gamma ** (len(episode) - i)
-            # print(reward)
-            # print(initial_state == event[0], retour)
+        total_reward = 0
+        for t, event in enumerate(episode):
+            # calcul du retour
+            retour = 0
+            for k in range(t, T + 1):
+                retour += (gamma ** (t -k)) * episode[k][2]
+            total_reward += event[2]
+
+            # maj q _value
             q_function[str(event[0]), event[1]] += alpha * (retour - q_function[str(event[0]), event[1]])
-            # print(q_function[str(event[0]), event[1]])
 
-        # time.sleep(1)
+            # maj politique
+            q_action_list = [q_function[str(event[0]), action] for action in simulator.get_actions(event[0])]
+            action_index = q_action_list.index(max(q_action_list))
+            policy[str(event[0])] = simulator.get_actions(event[0])[action_index]
 
-    # Mise a jour de la politique
-    nb = 0
-    for state in all_states:
-        q_action_list = [q_function[str(state), action] for action in simulator.get_actions(state)]
-        action_index = q_action_list.index(max(q_action_list))
-        if q_action_list == [0 for a in simulator.get_actions(state)]:
-            nb += 1
-        policy[str(state)] = simulator.get_actions(state)[action_index]
 
-    print(nb)
+
+    # Print final
+    print("### FIN du calcul ###")
+    print("actions en s0:", simulator.get_actions(initial_state))
+    print("q_val associées:",
+          ["{:05.2f}".format(q_function[str(initial_state), action]) for action in simulator.get_actions(initial_state)])
+    print("monte_carlo iteration, elapsed time: {:05.2f},".format(time.time() - start_time),
+          "v(s0) = {:6.2f}".format(max([q_function[str(initial_state), action] for action in simulator.get_actions(initial_state)])))
+
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    print(dirname)
+    # plt.figure()
+    plt.plot(x, mean_rewards)
+    plt.title('Récompense moyenne par épisode - Monte-Carlo. T=' + str(T))
+    plt.ylabel('Récompense moyenne')
+    plt.xlabel('MC iteration')
+    plt.draw()
+
+    plt.savefig(dirname + "/MC_mean_reward_by_episode.png")
+
+    plt.clf()
+    plt.plot(x, v_s0)
+    plt.title('v(s0) - Monte-Carlo. T=' + str(T))
+    plt.ylabel('v(s0à')
+    plt.xlabel('MC iteration')
+    plt.draw()
+    plt.savefig(dirname + "/MC_v(s0).png")
+
     return policy
 
 
