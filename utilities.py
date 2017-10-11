@@ -3,6 +3,8 @@
 import itertools
 import Actions
 import time
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from State import print_state
 from random import choice
