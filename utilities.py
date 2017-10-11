@@ -53,52 +53,6 @@ def get_all_states(max_battery_level, grid_size):
     return states
 
 
-def our_dynamic_programming(all_states, simulator, T):
-    """
-    Implémentation de l'optimisation de la politique par dynamic programming
-    :param all_states: la liste de tous les états
-    :param simulator: le simulateur
-    :param T: la longeur des épisodes
-    :return policy: la politique optimale 
-    """
-
-    # Initialisation de la politique et de la fonction de valeur
-    policy = dict()
-    new_policy = dict()
-    value_function = dict()
-    for state in all_states:
-        for t in range(1, T + 1):
-            policy[str(state), t] = "move_up"
-            value_function[str(state), t] = 0
-
-    # Evaluation et optimisation de la politique
-    while policy != new_policy:
-        # copie profonde de la politique pour bypass le passage par référence
-        new_policy = Actions.reasign(policy)
-        print("policy updated")
-
-        for t in range(T-1, 0, -1):
-            for state in all_states:
-                value = []
-                action_list = simulator.get_actions(state)
-                for action in action_list:
-                    value_item = 0
-                    # récupération depuis le simulateur de la récompense et des couples (proba, états futures) étant
-                    # donnés une action et un état
-                    reward, future = simulator.get_with_model(action, state)
-                    value_item += reward
-                    for proba, future_state in future:
-                        value_item += proba * value_function[str(future_state), t + 1]
-                    value.append(value_item)
-
-                max_value = max(value)
-                best_action = action_list[value.index(max_value)]
-                value_function[str(state), t] = max_value
-                policy[str(state), t] = best_action
-
-    return policy
-
-
 def dynamic_programming(all_states, simulator, gamma, epsilon):
     """
     Implémentation de l'optimisation de la politique par dynamic programming
@@ -142,66 +96,21 @@ def dynamic_programming(all_states, simulator, gamma, epsilon):
     return policy
 
 
-def our_q_learning(all_states, simulator, T, time_limit, alpha):
+def a_epsilon_greedy(simulator, state, epsilon, policy):
     """
-    
-    :param all_states: 
-    :param simulator: 
-    :param T: 
-    :param time_limit: 
-    :return: 
+    Etant donnée un état, et un hyperparamètre epsilon retourne en fonction d'un tirage dépendant de epsilon
+    une action pris au hasard dans la liste des actions possibles, ou celles prescrite par la politique
+    :param simulator: le simulateur
+    :param state: un état
+    :param epsilon: un hyperparamètre
+    :param policy: la politique
+    :return: une action
     """
-    # Initialisation de la politique et de la fonction de valeur
-    q_value_function = dict()
-    action_list = ["move_down", "move_up", "move_right", "move_left", "clean", "dead", "load", "stay"]
-    for state in all_states:
-        for t in range(T + 1):
-            for action in action_list:
-                q_value_function[str(state), t, action] = 0
-
-    start_time = time.time()
-    while time.time() - start_time < time_limit:
-        print("q_learning iteration, elapsed time:", time.time() - start_time)
-        for s_t in all_states:
-            for t in range(T):
-                # get possible action for s_t
-                action_list_s_t = simulator.get_actions(s_t)
-                # get all q_value, for s_t and all the possible action
-                q_value_action_s_t = [q_value_function[str(s_t), t, action] for action in action_list_s_t]
-                # get a_t, the action which maximize the q_value
-                a_t = action_list_s_t[q_value_action_s_t.index(max(q_value_action_s_t))]
-
-                # get s_t+1 and reward from simulator
-                s_t_plus_1, reward = simulator.get(a_t, s_t)
-                # get possible action for s_t+1 and find the maximum q_value for all these actions
-                action_list_s_t_plus_1 = simulator.get_actions(s_t_plus_1)
-                max_q_value_action_s_t_plus_1 = max([q_value_function[str(s_t_plus_1), t + 1, action]
-                                                     for action in action_list_s_t_plus_1])
-
-                # compute delta and update q_value
-                delta = reward + max_q_value_action_s_t_plus_1 - q_value_function[str(s_t), t, a_t]
-                q_value_function[str(s_t), t, a_t] += alpha * delta
-                # prepare next event in the episode
-                s_t = s_t_plus_1
-
-    policy = dict()
-    for state in all_states:
-        q_value_action_list = [q_value_function[str(state), 0, action] for action in action_list]
-        action_index = q_value_action_list.index(max(q_value_action_list))
-        if action_list[action_index] == "move_down":
-            print(state, q_value_action_list, action_list[action_index])
-        policy[str(state), 1] = action_list[action_index]
-
-    return policy
-
-
-def a_epsilon_greedy(simulator, state, epsilon, action_list, policy):
+    action_list = simulator.get_actions(state)
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
-        # print(1 - epsilon + epsilon / len(action_list), "politique")
         return policy[str(state)]
     else:
         a = choice(action_list)
-        # print(1 - epsilon + epsilon / len(action_list), "hasard:", a)
         return a
 
 
