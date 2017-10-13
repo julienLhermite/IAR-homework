@@ -67,10 +67,8 @@ if __name__ == "__main__":
     # Algo d'optimisation
     if sys.argv[1] == "dynamic_programming":
         policy = dynamic_programming(all_states, simulator, GAMMA, EPSILON)
-        # policy = our_dynamic_programming(all_states, simulator, T)
     elif sys.argv[1] == "q_learning":
-        #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
-        policy, perf = q_learning(all_states, initial_state, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
+        policy = q_learning(all_states, initial_state, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
     elif sys.argv[1] == "monte_carlo":
         policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state)
     else:
