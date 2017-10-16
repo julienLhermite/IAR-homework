@@ -246,7 +246,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     plt.clf()
     plt.plot(x, v_s0)
     plt.title('v(s0) - Monte-Carlo. T=' + str(T))
-    plt.ylabel('v(s0à')
+    plt.ylabel('v(s0)')
     plt.xlabel('MC iteration')
     plt.draw()
     plt.savefig(dirname + "/MC_v(s0).png")
