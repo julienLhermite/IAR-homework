@@ -113,19 +113,30 @@ def a_epsilon_greedy(simulator, state, epsilon, policy):
         return a
 
 
+def get_all_max(my_list):
+    """
+    Fonction permettant de récupérer la valeur maximale d'une liste ainsi que l'ensemble des indices des valeurs max
+    :param my_list: Une liste de nombres
+    :return: Un couple max_value et une liste d'index
+    """
+    max_value = max(my_list)
+    indexes = [index for index, value in enumerate(my_list) if value == max_value]
+    return max_value, indexes
+
+
 def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     """
     Fonction epsillon greedy qui renvoit l'action de la fonction de Qvaleur associée à un état
     :param simulator: Notre simulateur comprenant des focntionnalités de tirage aléatoire
     :param state: Etat du système actuel
-    :param epsillon: Paramètre de convergence
+    :param epsilon: Paramètre de convergence
     :param action_list: Liste des actions possibles pour l'état state
     :param q_function: Représentation de notre fonction de Qvaleur
     :return: l'action de la fonction de Qvaleur associée à un état selon la loie epsilon greedy
     """
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
         q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_action_list.index(max(q_action_list))
+        action_index = choice(get_all_max(q_action_list)[1])
         # print(1 - epsilon + epsilon / len(action_list), "Qvaleur maximisée")
         return action_list[action_index]
     else:
@@ -243,48 +254,90 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     return policy
 
 
-def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha):
-
-    # Initialisation de la q_function et la policy
+def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon, alpha):
+    """
+    Fonction implémentant l'algorithme qLearning
+    :param all_states: Ensemble des états possibles du système
+    :param initial_state: Etat de départ pour notre robot
+    :param simulator: Classe proposant un ensemble de fonction permettant de simuler le comportement du robt et son
+    environnement
+    :param time_limit: Durée de l'apprentissage de l'algorithme
+    :param gamma: paramètre de calcul
+    :param epsilon: paramètre de convergeance
+    :param alpha: paramètre de calcul
+    :return: Une politique
+    """
+    # Initialisation de la q_function
     q_function = dict()
-    policy = dict()
     for state in all_states:
-        policy[str(state)] = "move_up"
-        for action in simulator.get_actions(state):
+        possible_action = simulator.get_actions(state)
+        for action in possible_action:
             q_function[str(state), action] = 0
 
-    s0 = choice(all_states)
-    a0 = a_epsilon_greedy(simulator, s0, epsilon, policy)
-    print("Etat:", s0, "\nActions possibles", simulator.get_actions(s0), "---->", a0)# Pour Debug
+    s0 = Actions.reasign(initial_state)
+    a0 = choice(simulator.get_actions(s0))
 
     # Algorithme de Q Learning
     start_time = time.time()
-    t = 0  # Pour Debug
+    iteration = 0
+    total_reward = []
+    mean_reward = []
     while time.time() - start_time < time_limit:
-        # print("q_Learning iteration, elapsed time:", time.time() - start_time)
+
         reward, future_state = simulator.get(a0, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
-        if t == 0:  # Pour Debug
-            print("Valeur actuelle:", q_function[str(s0), a0], "Valeur ajoutée:", alpha*delta)
         q_function[str(s0), a0] += alpha*delta
-        if t == 0:  # Pour Debug
-            print("Nouvelle valeur:", q_function[str(s0), a0])
+
+        # Mise à jour des variables de perf
+        total_reward.append(reward * gamma ** iteration)
+        if iteration == 0:
+            mean_reward.append(sum(total_reward))
+        else:
+            mean_reward.append(sum(total_reward) / iteration)
+
+        # Changement de l'état et de l'action
         s0 = future_state
         a0 = future_action
-        t += 1
+
+        # Decreasing Episilon parameter
+        iteration += 1
+        if iteration % 100 == 0 and epsilon > 0.1:
+            epsilon /= 1.00001
 
     # Mise à jour de la politique
+    policy = dict()
     for state in all_states:
         action_list = simulator.get_actions(state)
-        q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_action_list.index(max(q_action_list))
+        q_values_list = [q_function[str(state), action] for action in action_list]
+        action_index = q_values_list.index(max(q_values_list))
         # if state["robot_pos"] == [1, 0]:
         #     print(action_list)
         #     print(q_action_list)
         policy[str(state)] = action_list[action_index]
 
-    # Display
-    # evaluation de performance v(s0) = max Q(s,a)
+    # Tracé de la courbe average reward
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    print(dirname)
+    x = [indice for indice, value in enumerate(total_reward)]
+    plt.plot(x, mean_reward)
+    plt.title('Récompense moyenne des états analysés - Q Learning. Durée=' + str(time_limit))
+    plt.ylabel('Récompense moyenne')
+    plt.xlabel('Q Learning iteration')
+    plt.draw()
+    plt.savefig(dirname + "/QL_mean_reward_by_episode.png")
+
+    # Tracé de la courbe V(s0)
+    action_list = simulator.get_actions(initial_state)
+    q_values_list = [q_function[str(state), action] for action in action_list]
+    v_s0_value = max(q_values_list)
+    v_s0 = [v_s0_value for i in range(len(x))]
+    plt.clf()
+    plt.plot(x, v_s0)
+    plt.title('v(s0) - Q Learning. Durée=' + str(time_limit))
+    plt.ylabel('v(s0)')
+    plt.xlabel('Q Learning iteration')
+    plt.draw()
+    plt.savefig(dirname + "/QL_v(s0).png")
 
     return policy
