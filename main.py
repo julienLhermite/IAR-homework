@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 from Simulator import Simulator
 from State import *
-from utilities import *
+from Learning import *
+import signal
 import sys
+
 
 # ---------------- Constantes --------------- #
 # Système
 GRID_SIZE = (2, 2)
-MAX_BATTERY_LEVEL = 10
-T = GRID_SIZE[0] * GRID_SIZE[1] * 4
-TIME_LIMIT = 60  # en seconde
+PRINT_COUNT = 10
+MAX_BATTERY_LEVEL = 15
+T = 2 ** (GRID_SIZE[0] * GRID_SIZE[1])
+TIME_LIMIT = 300  # en second
 ALPHA = 0.01
-EPSILON = 0.3
+EPSILON = 0.1
 GAMMA = 0.95
 # Proba
 MOVING_PROBA = 1
@@ -23,8 +26,8 @@ MOVING_REWARD = -5
 GOAL_REWARD = 500
 DEAD_REWARD = -100
 CHARGING_REWARD = 0
-# ------------------------------------------- #
 
+# ------------------------------------------- #
 
 if __name__ == "__main__":
 
@@ -49,9 +52,11 @@ if __name__ == "__main__":
 
     # Instantiate states list
     all_states = get_all_states(MAX_BATTERY_LEVEL, GRID_SIZE)
+    print("GRID SIZE:", GRID_SIZE)
     print("nombre d'états:", len(all_states))
     print("Time limit:", TIME_LIMIT)
     print("T:", T)
+    print("Battery Level:", MAX_BATTERY_LEVEL)
 
     initial_state = {
         "base_pos": [0, 0],
@@ -61,21 +66,24 @@ if __name__ == "__main__":
     }
 
     # Algo d'optimisation
+    signal.signal(signal.SIGINT, signal_handler)
+
     if sys.argv[1] == "dynamic_programming":
         title = "DP"
         policy = dynamic_programming(all_states, simulator, GAMMA, EPSILON)
         # policy = our_dynamic_programming(all_states, simulator, T)
     elif sys.argv[1] == "q_learning":
         #policy = our_q_learning(all_states, simulator, T, TIME_LIMIT, ALPHA,)
-        title = "QL -> T: " + str(T) + ", time_limit: " + str(TIME_LIMIT)
-        policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA)
+        title = "QL -> time_limit: " + str(TIME_LIMIT)
+        policy = q_learning(all_states, simulator, TIME_LIMIT, GAMMA, EPSILON, ALPHA, initial_state)
     elif sys.argv[1] == "monte_carlo":
         title = "MC -> T: " + str(T) + ", time_limit: " + str(TIME_LIMIT)
-        policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state)
+        policy = monte_carlo(all_states, simulator, TIME_LIMIT, T, GAMMA, EPSILON, ALPHA, initial_state, step=PRINT_COUNT)
     else:
         print("Argument invalide")
         sys.exit(-1)
 
+    Debug()
     # Display
     display = Display(simulator, policy, GRID_SIZE, MAX_BATTERY_LEVEL, initial_state, title)
     display.run()
