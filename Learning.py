@@ -4,11 +4,22 @@ import itertools, os
 import Actions
 import time
 import copy
+import signal
 from State import print_state
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from random import choice
+from Debug import Debug
+
+hasard_nb, policy_nb = 0, 0
+interrupt_flag = False
+
+
+def signal_handler(signal, frame):
+        global interrupt_flag
+        print('interrupt!')
+        interrupt_flag = True
 
 
 def get_possible_dirty_cells(grid_size, base_pos):
@@ -72,9 +83,12 @@ def dynamic_programming(all_states, simulator, gamma, epsilon):
         policy[str(state)] = "stay"
 
     stop_criteria = max([abs(value_function[i] - value_function_bis[i]) for i in value_function.keys()])
+    mean_values = [0.]
+    x = [0]
     while stop_criteria > epsilon:
         value_function_bis = Actions.reasign(value_function)
 
+        mean_value = 0.
         for state in all_states:
             to_maximize = []
             action_list = simulator.get_actions(state)
@@ -86,11 +100,32 @@ def dynamic_programming(all_states, simulator, gamma, epsilon):
                     to_maximize[i] += gamma * proba * value_function[str(future_state)]
 
             value_function[str(state)] = max(to_maximize)
+            mean_value += value_function[str(state)]
+
             opti_action = action_list[to_maximize.index(value_function[str(state)])]
             policy[str(state)] = opti_action
 
         stop_criteria = max([abs(value_function[i] - value_function_bis[i]) for i in value_function.keys()])
         print("dynamic programming iteration:", stop_criteria, "<", epsilon, "?")
+
+        # for plotting
+        x.append(x[-1] + 1)
+        mean_value = mean_value / len(all_states)
+        mean_values.append(mean_value)
+
+    # plot
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    # plt.figure()
+
+    plt.plot(x, mean_values)
+
+    title = 'DP, EPSILON=' + "{:3}".format(epsilon) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(
+        simulator.max_battery_level) + " - mean_values of policy"
+    plt.title(title)
+    plt.ylabel('Mean value')
+    plt.xlabel('Iteration')
+    plt.draw()
+    plt.savefig(dirname + "/plots/" + title + ".png")
 
     return policy
 
@@ -105,23 +140,15 @@ def a_epsilon_greedy(simulator, state, epsilon, policy):
     :param policy: la politique
     :return: une action
     """
+    global policy_nb, hasard_nb
     action_list = simulator.get_actions(state)
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
+        policy_nb += 1
         return policy[str(state)]
     else:
+        hasard_nb += 1
         a = choice(action_list)
         return a
-
-
-def get_all_max(my_list):
-    """
-    Fonction permettant de récupérer la valeur maximale d'une liste ainsi que l'ensemble des indices des valeurs max
-    :param my_list: Une liste de nombres
-    :return: Un couple max_value et une liste d'index
-    """
-    max_value = max(my_list)
-    indexes = [index for index, value in enumerate(my_list) if value == max_value]
-    return max_value, indexes
 
 
 def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
@@ -129,14 +156,14 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
     Fonction epsillon greedy qui renvoit l'action de la fonction de Qvaleur associée à un état
     :param simulator: Notre simulateur comprenant des focntionnalités de tirage aléatoire
     :param state: Etat du système actuel
-    :param epsilon: Paramètre de convergence
+    :param epsillon: Paramètre de convergence
     :param action_list: Liste des actions possibles pour l'état state
     :param q_function: Représentation de notre fonction de Qvaleur
     :return: l'action de la fonction de Qvaleur associée à un état selon la loie epsilon greedy
     """
     if simulator.roll_dice(1 - epsilon + epsilon/len(action_list)):
         q_action_list = [q_function[str(state), action] for action in action_list]
-        action_index = choice(get_all_max(q_action_list)[1])
+        action_index = q_action_list.index(max(q_action_list))
         # print(1 - epsilon + epsilon / len(action_list), "Qvaleur maximisée")
         return action_list[action_index]
     else:
@@ -145,7 +172,7 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
         return a
 
 
-def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, initial_state):
+def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, initial_state, step=1):
     """
     Implémentation de l'optimisation de la politique par monte_carlo control
     :param all_states: la liste de tous les états
@@ -158,6 +185,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     :param initial_state: l'état initial
     :return policy: la politique 
     """
+    global policy_nb, hasard_nb
     # Initialisation de la q_function et la policy
     q_function = dict()
     policy = dict()
@@ -172,33 +200,30 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     iter = 0
     mean_rewards, x = [], []
     v_s0 = []
+    episode = []
+    stop = True
     while time.time() - start_time < time_limit:
-        if epsilon > 0.1:
-            epsilon /= 1.00001
-
         s0 = Actions.reasign(initial_state)
 
         # on print toutes les 10 secondes pour ne pas polluer la console
         time_spent = time.time() - start_time
-        if time_spent > 6 * count:
+        if time_spent > step * count:
             count += 1
-            q_values_s0 = [q_function[str(s0), action] for action in simulator.get_actions(s0)]
-            print("## monte_carlo iteration, elapsed time: {:05.2f}s |".format(time.time() - start_time),
-                  "v(s0) = {:06.2f}".format(max(q_values_s0)),
-                  "  ##")
-            print("actions en s0:", simulator.get_actions(s0))
-            print("q_val associées:",
-                  ["{:05.2f}".format(q_function[str(s0), action]) for action in simulator.get_actions(s0)], "\n")
+            action_list = simulator.get_actions(s0)
+            q_values_s0 = [q_function[str(s0), action] for action in action_list]
+            Debug("monte_carlo iteration, elapsed time", time.time() - start_time, v_s0=max(q_values_s0))
+            # Debug(policy_nb=policy_nb, hasard_nb=hasard_nb, epsilon=epsilon,
+            #       policy_proba=1 - epsilon + epsilon/len(action_list))
+
+            # add value to vector for plot
             mean_reward = total_reward/T
             mean_rewards.append(mean_reward)
             v_s0.append(max(q_values_s0))
-            x.append(iter)
-            iter += 1
-
+            x.append(step * count)
 
         # generation d'un episode
         episode = []
-
+        policy_nb, hasard_nb = 0, 0
         for t in range(T + 1):
             a0 = a_epsilon_greedy(simulator, s0, epsilon, policy)
             # print(s0, a0)
@@ -211,7 +236,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             # calcul du retour
             retour = 0
             for k in range(t, T + 1):
-                retour += (gamma ** (t -k)) * episode[k][2]
+                retour += (gamma ** (k - t)) * episode[k][2]
             total_reward += event[2]
 
             # maj q _value
@@ -221,8 +246,11 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             q_action_list = [q_function[str(event[0]), action] for action in simulator.get_actions(event[0])]
             action_index = q_action_list.index(max(q_action_list))
             policy[str(event[0])] = simulator.get_actions(event[0])[action_index]
+        if epsilon > 0.1:
+            epsilon /= 1.00001
 
-
+        if interrupt_flag:
+            break
 
     # Print final
     print("### FIN du calcul ###")
@@ -233,111 +261,87 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
           "v(s0) = {:6.2f}".format(max([q_function[str(initial_state), action] for action in simulator.get_actions(initial_state)])))
 
     dirname = os.path.dirname(os.path.abspath(__file__))
-    print(dirname)
     # plt.figure()
     plt.plot(x, mean_rewards)
-    plt.title('Récompense moyenne par épisode - Monte-Carlo. T=' + str(T))
+    title = 'MC, T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - mean_reward"
+    plt.title(title)
     plt.ylabel('Récompense moyenne')
-    plt.xlabel('MC iteration')
+    plt.xlabel('Time(s)')
     plt.draw()
 
-    plt.savefig(dirname + "/MC_mean_reward_by_episode.png")
+    plt.savefig(os.path.join(dirname, "/plots/" + str(title) + ".png"))
 
     plt.clf()
     plt.plot(x, v_s0)
-    plt.title('v(s0) - Monte-Carlo. T=' + str(T))
+    title = 'MC, T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - v_s0(t)"
     plt.ylabel('v(s0)')
-    plt.xlabel('MC iteration')
+    plt.xlabel('Time(s)')
     plt.draw()
-    plt.savefig(dirname + "/MC_v(s0).png")
+    plt.savefig(os.path.join(dirname, "/plots/" + str(title) + ".png"))
 
     return policy
 
 
-def q_learning(all_states, initial_state, simulator, time_limit, gamma, epsilon, alpha):
-    """
-    Fonction implémentant l'algorithme qLearning
-    :param all_states: Ensemble des états possibles du système
-    :param initial_state: Etat de départ pour notre robot
-    :param simulator: Classe proposant un ensemble de fonction permettant de simuler le comportement du robt et son
-    environnement
-    :param time_limit: Durée de l'apprentissage de l'algorithme
-    :param gamma: paramètre de calcul
-    :param epsilon: paramètre de convergeance
-    :param alpha: paramètre de calcul
-    :return: Une politique
-    """
-    # Initialisation de la q_function
+def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha, initial_state):
+
+    # Initialisation de la q_function et la policy
     q_function = dict()
+    policy = dict()
     for state in all_states:
-        possible_action = simulator.get_actions(state)
-        for action in possible_action:
+        policy[str(state)] = choice(simulator.get_actions(state))
+        for action in simulator.get_actions(state):
             q_function[str(state), action] = 0
 
     s0 = Actions.reasign(initial_state)
-    a0 = choice(simulator.get_actions(s0))
+    a0 = a_epsilon_greedy(simulator, s0, epsilon, policy)
 
     # Algorithme de Q Learning
     start_time = time.time()
-    iteration = 0
-    total_reward = []
-    mean_reward = []
+    count = 1
+    q_values_s0, t = [], []
     while time.time() - start_time < time_limit:
+        global interrupt_flag
+        # print("q_Learning iteration, elapsed time:", time.time() - start_time)
 
         reward, future_state = simulator.get(a0, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
-        q_function[str(s0), a0] += alpha*delta
 
-        # Mise à jour des variables de perf
-        total_reward.append(reward * gamma ** iteration)
-        if iteration == 0:
-            mean_reward.append(sum(total_reward))
-        else:
-            mean_reward.append(sum(total_reward) / iteration)
-
-        # Changement de l'état et de l'action
+        # Maj q_value
+        q_function[str(s0), a0] += alpha * delta
         s0 = future_state
         a0 = future_action
 
-        # Decreasing Episilon parameter
-        iteration += 1
-        if iteration % 100 == 0 and epsilon > 0.1:
-            epsilon /= 1.00001
+        # Maj politique
+        action_list = simulator.get_actions(s0)
+        q_action_list = [q_function[str(s0), action] for action in action_list]
+        policy[str(s0)] = action_list[q_action_list.index(max(q_action_list))]
 
-    # Mise à jour de la politique
-    policy = dict()
-    for state in all_states:
-        action_list = simulator.get_actions(state)
-        q_values_list = [q_function[str(state), action] for action in action_list]
-        action_index = q_values_list.index(max(q_values_list))
-        # if state["robot_pos"] == [1, 0]:
-        #     print(action_list)
-        #     print(q_action_list)
-        policy[str(state)] = action_list[action_index]
+        if reward == simulator.dead_reward:
+            s0 = Actions.reasign(initial_state)
+            a0 = a_epsilon_greedy(simulator, initial_state, epsilon, policy)
 
-    # Tracé de la courbe average reward
+        # Debug
+        time_spent = time.time() - start_time
+        if time_spent > 1 * count:
+            count += 1
+            t.append(time_spent)
+            q_values = [q_function[str(initial_state), action] for action in simulator.get_actions(initial_state)]
+            q_value_s0 = max(q_values)
+            q_values_s0.append(q_value_s0)
+            Debug("time spent", time_spent, q_value_s0=q_value_s0)
+
+        if interrupt_flag:
+            break
+
+    # Plot
     dirname = os.path.dirname(os.path.abspath(__file__))
-    print(dirname)
-    x = [indice for indice, value in enumerate(total_reward)]
-    plt.plot(x, mean_reward)
-    plt.title('Récompense moyenne des états analysés - Q Learning. Durée=' + str(time_limit))
-    plt.ylabel('Récompense moyenne')
-    plt.xlabel('Q Learning iteration')
+    plt.plot(t, q_values_s0)
+    title = 'QL, GRID=' + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - q_value_s0"
+    plt.title(title)
+    plt.ylabel('q_value_s0')
+    plt.xlabel('Time(s)')
     plt.draw()
-    plt.savefig(dirname + "/QL_mean_reward_by_episode.png")
+    plt.savefig(os.path.join(dirname, "plots", str(title) + ".png"))
 
-    # Tracé de la courbe V(s0)
-    action_list = simulator.get_actions(initial_state)
-    q_values_list = [q_function[str(state), action] for action in action_list]
-    v_s0_value = max(q_values_list)
-    v_s0 = [v_s0_value for i in range(len(x))]
-    plt.clf()
-    plt.plot(x, v_s0)
-    plt.title('v(s0) - Q Learning. Durée=' + str(time_limit))
-    plt.ylabel('v(s0)')
-    plt.xlabel('Q Learning iteration')
-    plt.draw()
-    plt.savefig(dirname + "/QL_v(s0).png")
-
-    return policy
+return policy

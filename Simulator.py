@@ -3,6 +3,8 @@
 import random
 import copy
 import Actions
+from Debug import Debug
+from State import print_state
 
 class Simulator:
 
@@ -38,14 +40,13 @@ class Simulator:
         dice = random.random()
         return dice < probabilities
 
-    def get_actions(self, state):
+    def get_actions(self, state, DEBUG=False):
         """
         retourne la liste d'actions possibles étant donné l'état state
         :param state: l'état courant
         :return actions: la liste d'actions possibles 
         """
-        actions = list()
-
+        actions = []
         if state["robot_pos"] in state["dirty_cells"] and state["battery_level"] > 0:
             actions.append("clean")
 
@@ -53,7 +54,17 @@ class Simulator:
             actions.append("load")
 
         if state["battery_level"] > 0:
-            actions += ["move_up", "move_down", "move_right", "move_left"]
+            x, y = state['robot_pos']
+            if self.grid_size[0] != 1:
+                if x != 0:
+                    actions.append("move_left")
+                if x != self.grid_size[0] - 1:
+                    actions.append("move_right")
+            if self.grid_size[1] != 1:
+                if y != 0:
+                    actions.append("move_up")
+                if y != self.grid_size[0] - 1:
+                    actions.append("move_down")
 
         if not state["dirty_cells"] and state["robot_pos"] == state["base_pos"] and state["battery_level"] == self.max_battery_level:
             actions.append("stay")
@@ -61,7 +72,9 @@ class Simulator:
         if state["battery_level"] == 0 and state["robot_pos"] != state["base_pos"]:
             actions.append("dead")
 
+        DEBUG and Debug(state=state, actions=actions)
         return actions
+
 
     def do_action(self, action, state):
         """
@@ -120,6 +133,7 @@ class Simulator:
         # tout les autres --> -0.5
 
         if state["battery_level"] == 0:
+            # print("##### dead reward ! #####")
             return self.dead_reward,\
                    state
 
@@ -129,10 +143,11 @@ class Simulator:
             return self.goal_reward,\
                    self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
 
-        if action == "load":
+        if action == "load" or action == "stay":
             return self.charging_reward,\
                    self.do_action(action, state) if self.roll_dice(proba) else state
         else:
+            #self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
             return self.moving_reward,\
                    self.do_action(action, state) if self.roll_dice(proba) else Actions.unload(state)
 

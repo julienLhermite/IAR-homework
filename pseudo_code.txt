@@ -1,0 +1,57 @@
+DP
+
+epsilon = 0.01
+s0 = état initial
+v'<- arbitraire
+v <- arbitraire
+
+while (||v-v'|| > epsilon)
+	v' <- v | ∀s∈S : v'(s) = v(s)
+	∀s∈S : v(s) = max R(s, a) + gamma * Σ p(s' | s, a) * v(s')
+
+return v(s0)
+
+--------------------------------------------------
+
+MC
+
+gamma = 0.95
+alpha = 0.01 ou 0.1
+π <- arbitraire		#pi
+Q(s, a) <- arbitraire
+s0 <- état initial
+
+répéter
+	générer une épisode (s0, a0, r0, s1, a1, r1, ....., sT, aT, rT) ~ π
+	#s0, a0 =
+	#{
+	#	argmax Q(s0, a), avec proba = 1 - epsilon + epsilon / |A(S)|
+	#	random avec proba = epsilon / |A(S)
+	#}
+
+	for (t = 0 à T)
+		G_t <- Σ (de k = t à T) ( gamma ** (t-k) ) * r_k
+		Q(s_t, a_t) += alpha * [G_t - Q(s_t, a_t)]
+pour toujours
+
+return max Q(s0, a)
+
+--------------------------------------------------
+
+QL
+
+epsilon = 0.01
+gamma = 0.95
+∀s ∀a Q(s, a) = 0
+s0 <- état initial
+a0 <- episilon-greedy
+
+répéter
+	exécuter a de l'état s, observer (r, s')
+	sigma_erreur = r+ gamma * max Q(s', a') - Q(s, a)
+	Q(s, a) += alpha * sigma_erreur
+	s <- s'
+	a <- a'
+pour toujours
+
+return max Q(s0 ,a)
