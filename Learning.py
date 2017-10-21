@@ -172,6 +172,39 @@ def q_epsilon_greedy(simulator, state, epsilon, action_list, q_function):
         return a
 
 
+def get_distance(coord1, coord2):
+    """
+    Calcule la distance selon la norme 1 entre 2 coordonnées.
+    :param coord1: Coordonnées du premier element
+    :param coord2: Coordonnées du second element
+    :return: la distance norme 1
+    """
+    distance = abs(coord1[0]-coord2[0]) + abs(coord1[1]-coord2[1])
+    return distance
+
+
+def get_phi(state, simulator):
+    """
+    Génère notre vecteur de features
+    :param state: état dans lequel se trouve le robot
+    :param simulator: le simulateur
+    :return: un vecteur de dimension 1*3 de la forme (min distance to dirty cell, distance to base, reversed battery_level)
+    """
+    phi = []
+    if len(state["dirty_cells"]) == 0:
+        phi.append(0)
+    else:
+        dirty_cells_distances = []
+        for dirty_cell in state["dirty_cells"]:
+            dirty_cells_distances.append((get_distance(state["robot_pos"], dirty_cell)/(simulator.grid_size[0]
+                                                                                        *simulator.grid_size[1])+0.1))
+        phi.append(min(dirty_cells_distances))
+    phi.append(get_distance(state["robot_pos"], state["base_pos"])/(simulator.grid_size[0]*simulator.grid_size[1]))
+    phi.append((simulator.max_battery_level-state["battery_level"])/simulator.max_battery_level)
+
+    return phi
+
+
 def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, initial_state, step=1):
     """
     Implémentation de l'optimisation de la politique par monte_carlo control
@@ -194,6 +227,8 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
         policy[str(state)] = choice(possible_actions)
         for action in possible_actions:
             q_function[str(state), action] = 0
+
+    theta = [0.5]*3
 
     start_time = time.time()
     time_spent, count = 0, 1
@@ -238,6 +273,10 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             for k in range(t, T + 1):
                 retour += (gamma ** (k - t)) * episode[k][2]
             total_reward += event[2]
+            phi = get_phi(event[0], simulator)
+            delta_theta = [alpha*(retour-sum(x*y for x, y in zip(phi, theta))) * phi_component for phi_component in phi]
+            theta += delta_theta
+            print("/\\theta = " + str(max([abs(element) for element in delta_theta])) + "pour espillon = " + str(epsilon))
 
             # maj q _value
             q_function[str(event[0]), event[1]] += alpha * (retour - q_function[str(event[0]), event[1]])
@@ -246,6 +285,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
             q_action_list = [q_function[str(event[0]), action] for action in simulator.get_actions(event[0])]
             action_index = q_action_list.index(max(q_action_list))
             policy[str(event[0])] = simulator.get_actions(event[0])[action_index]
+
         if epsilon > 0.1:
             epsilon /= 1.00001
 
@@ -264,7 +304,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
     print(dirname)
     # plt.figure()
     plt.plot(x, mean_rewards)
-    title = 'MC, T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - mean_reward"
+    title = 'MC , T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - mean_reward"
     plt.title(title)
     plt.ylabel('Récompense moyenne')
     plt.xlabel('Time(s)')
@@ -274,7 +314,7 @@ def monte_carlo(all_states, simulator, time_limit, T, gamma, epsilon, alpha, ini
 
     plt.clf()
     plt.plot(x, v_s0)
-    title = 'MC, T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - v_s0(t)"
+    title = 'MC , T=' + "{:3}".format(T) + " GRID=" + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - v_s0(t)"
     plt.ylabel('v(s0)')
     plt.xlabel('Time(s)')
     plt.draw()
@@ -293,6 +333,8 @@ def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha, initial
         for action in simulator.get_actions(state):
             q_function[str(state), action] = 0
 
+    theta = [1] * 3
+
     s0 = Actions.reasign(initial_state)
     a0 = a_epsilon_greedy(simulator, s0, epsilon, policy)
 
@@ -307,6 +349,13 @@ def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha, initial
         reward, future_state = simulator.get(a0, s0)
         future_action = q_epsilon_greedy(simulator, future_state, epsilon, simulator.get_actions(future_state), q_function)
         delta = reward + gamma * q_function[str(future_state), future_action] - q_function[str(s0), a0]
+        current_phi = get_phi(s0, simulator)
+        future_phi = get_phi(future_state, simulator)
+        delta_theta = [(alpha * (reward + gamma * sum(x * y for x, y in zip(future_phi, theta)) -
+                                 sum(a * b for a, b in zip(current_phi, theta)))) * phi_component
+                       for phi_component in current_phi]
+        theta += delta_theta
+        print("/\\theta = " + str(max([abs(element) for element in delta_theta])) + "pour espillon = " + str(epsilon))
 
         # Maj q_value
         q_function[str(s0), a0] += alpha * delta
@@ -321,6 +370,7 @@ def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha, initial
         if reward == simulator.dead_reward:
             s0 = Actions.reasign(initial_state)
             a0 = a_epsilon_greedy(simulator, initial_state, epsilon, policy)
+            print("----Changement d'état---")
 
         # Debug
         time_spent = time.time() - start_time
@@ -338,11 +388,11 @@ def q_learning(all_states, simulator, time_limit, gamma, epsilon, alpha, initial
     # Plot
     dirname = os.path.dirname(os.path.abspath(__file__))
     plt.plot(t, q_values_s0)
-    title = 'QL, GRID=' + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - q_value_s0"
+    title = 'QL GRID=' + "{:9}".format(str(simulator.grid_size)) + "BAT:" + str(simulator.max_battery_level) + " T_LIMIT:" + "{:5}".format(time_limit) + " - q_value_s0"
     plt.title(title)
     plt.ylabel('q_value_s0')
     plt.xlabel('Time(s)')
     plt.draw()
-    plt.savefig(os.path.join(dirname, "plots", str(title) + ".png"))
+    plt.savefig(dirname + "/plots/" + title + ".png")
 
     return policy
